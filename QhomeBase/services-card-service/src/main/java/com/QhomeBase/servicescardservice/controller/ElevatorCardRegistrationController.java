@@ -1,0 +1,436 @@
+package com.QhomeBase.servicescardservice.controller;
+
+import com.QhomeBase.servicescardservice.dto.BatchCardPaymentRequest;
+import com.QhomeBase.servicescardservice.dto.CardRegistrationAdminDecisionRequest;
+import com.QhomeBase.servicescardservice.dto.ElevatorCardRegistrationCreateDto;
+import com.QhomeBase.servicescardservice.dto.ElevatorCardRegistrationDto;
+import com.QhomeBase.servicescardservice.service.ElevatorCardRegistrationService;
+import com.QhomeBase.servicescardservice.service.ElevatorCardRegistrationService.ElevatorCardPaymentResponse;
+import com.QhomeBase.servicescardservice.service.ElevatorCardRegistrationService.ElevatorCardPaymentResult;
+import com.QhomeBase.servicescardservice.service.vnpay.VnpayService;
+import com.QhomeBase.servicescardservice.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/elevator-card")
+@RequiredArgsConstructor
+@Slf4j
+public class ElevatorCardRegistrationController {
+
+    private final ElevatorCardRegistrationService registrationService;
+    private final JwtUtil jwtUtil;
+    private final VnpayService vnpayService;
+
+    @GetMapping("/admin/registrations")
+    public ResponseEntity<?> getRegistrationsForAdmin(@RequestParam(required = false) String status,
+                                                      @RequestParam(required = false) String paymentStatus,
+                                                      @RequestHeader HttpHeaders headers) {
+        UUID adminId = jwtUtil.getUserIdFromHeaders(headers);
+        if (adminId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            // Mặc định chỉ lấy những thẻ có status = PENDING nếu không có query param
+            String finalStatus = (status != null && !status.isBlank()) ? status.trim() : "PENDING";
+            String finalPaymentStatus = (paymentStatus != null && !paymentStatus.isBlank()) ? paymentStatus.trim() : null;
+            
+            return ResponseEntity.ok(
+                    registrationService.getRegistrationsForAdmin(finalStatus, finalPaymentStatus)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi tải danh sách đăng ký", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể lấy danh sách đăng ký"));
+        }
+    }
+
+    @GetMapping("/admin/registrations/{registrationId}")
+    public ResponseEntity<?> getRegistrationForAdmin(@PathVariable String registrationId,
+                                                     @RequestHeader HttpHeaders headers) {
+        UUID adminId = jwtUtil.getUserIdFromHeaders(headers);
+        if (adminId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            UUID regUuid = UUID.fromString(registrationId);
+            ElevatorCardRegistrationDto dto = registrationService.getRegistrationForAdmin(regUuid);
+            return ResponseEntity.ok(toResponse(dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin/registrations/{registrationId}/decision")
+    public ResponseEntity<?> processAdminDecision(@PathVariable String registrationId,
+                                                  @Valid @RequestBody CardRegistrationAdminDecisionRequest request,
+                                                  @RequestHeader HttpHeaders headers) {
+        UUID adminId = jwtUtil.getUserIdFromHeaders(headers);
+        if (adminId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            UUID regUuid = UUID.fromString(registrationId);
+            ElevatorCardRegistrationDto dto = registrationService.processAdminDecision(adminId, regUuid, request);
+            return ResponseEntity.ok(toResponse(dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createRegistration(@RequestBody ElevatorCardRegistrationCreateDto dto,
+                                               @RequestHeader HttpHeaders headers) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            String accessToken = extractAccessToken(headers);
+            ElevatorCardRegistrationDto created = registrationService.createRegistration(userId, dto, accessToken);
+            Map<String, Object> body = new HashMap<>();
+            body.put("id", created.id() != null ? created.id().toString() : null);
+            body.put("status", created.status());
+            body.put("paymentStatus", created.paymentStatus());
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi tạo đăng ký", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể tạo đăng ký thẻ thang máy: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/vnpay-url")
+    public ResponseEntity<?> createRegistrationAndPay(@RequestBody ElevatorCardRegistrationCreateDto dto,
+                                                      @RequestHeader HttpHeaders headers,
+                                                      HttpServletRequest request) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            String accessToken = extractAccessToken(headers);
+            ElevatorCardPaymentResponse response = registrationService.createAndInitiatePayment(userId, dto, request, accessToken);
+            Map<String, Object> body = new HashMap<>();
+            body.put("registrationId", response.registrationId() != null ? response.registrationId().toString() : null);
+            body.put("paymentUrl", response.paymentUrl());
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi tạo đăng ký", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể khởi tạo đăng ký thang máy"));
+        }
+    }
+
+    @PostMapping("/{registrationId}/resume-payment")
+    public ResponseEntity<?> resumePayment(@PathVariable String registrationId,
+                                          @RequestHeader HttpHeaders headers,
+                                          HttpServletRequest request) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            log.warn("⚠️ [ElevatorCard] Unauthorized request to resumePayment");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        
+        try {
+            UUID regUuid = UUID.fromString(registrationId);
+            log.debug("🔍 [ElevatorCard] resumePayment request: registrationId={}, userId={}", regUuid, userId);
+            
+            ElevatorCardPaymentResponse response = registrationService.initiatePayment(userId, regUuid, request);
+            Map<String, Object> body = new HashMap<>();
+            body.put("registrationId", response.registrationId() != null ? response.registrationId().toString() : null);
+            body.put("paymentUrl", response.paymentUrl());
+            
+            log.info("✅ [ElevatorCard] resumePayment success: registrationId={}", regUuid);
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ [ElevatorCard] Invalid argument: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.warn("⚠️ [ElevatorCard] IllegalStateException: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi tiếp tục thanh toán", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể tiếp tục thanh toán: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/batch-payment")
+    public ResponseEntity<?> batchPayment(@Valid @RequestBody BatchCardPaymentRequest request,
+                                         @RequestHeader HttpHeaders headers,
+                                         HttpServletRequest httpRequest) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            log.warn("⚠️ [ElevatorCard] Unauthorized request to batchPayment");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        
+        try {
+            log.info("📥 [ElevatorCard] Batch payment request: unitId={}, registrationIds={}", 
+                    request.unitId(), request.registrationIds().size());
+            
+            ElevatorCardPaymentResponse response = registrationService.batchInitiatePayment(userId, request, httpRequest);
+            Map<String, Object> body = new HashMap<>();
+            body.put("registrationId", response.registrationId() != null ? response.registrationId().toString() : null);
+            body.put("paymentUrl", response.paymentUrl());
+            body.put("cardCount", request.registrationIds().size());
+            
+            log.info("✅ [ElevatorCard] Batch payment initiated: {} cards", request.registrationIds().size());
+            return ResponseEntity.ok(body);
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ [ElevatorCard] Invalid argument: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.warn("⚠️ [ElevatorCard] IllegalStateException: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi batch payment", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể khởi tạo thanh toán batch: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/max-cards")
+    public ResponseEntity<?> getMaxCardsForUnit(@RequestParam UUID unitId,
+                                                @RequestHeader HttpHeaders headers) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            log.warn("⚠️ [ElevatorCard] Unauthorized request to getMaxCardsForUnit");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        
+        if (unitId == null) {
+            log.warn("⚠️ [ElevatorCard] getMaxCardsForUnit called with null unitId");
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "unitId không được để trống"));
+        }
+        
+        log.debug("🔍 [ElevatorCard] getMaxCardsForUnit request: unitId={}, userId={}", unitId, userId);
+        
+        try {
+            Map<String, Object> result = registrationService.getMaxCardsForUnit(unitId);
+            log.info("✅ [ElevatorCard] getMaxCardsForUnit success: {}", result);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ [ElevatorCard] Invalid argument: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.error("❌ [ElevatorCard] IllegalStateException khi lấy số lượng thẻ tối đa: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi không mong đợi khi lấy số lượng thẻ tối đa", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể lấy số lượng thẻ tối đa: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/household-members")
+    public ResponseEntity<?> getHouseholdMembers(@RequestParam UUID unitId,
+                                                 @RequestHeader HttpHeaders headers) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            log.warn("⚠️ [ElevatorCard] Unauthorized request to getHouseholdMembers");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        
+        if (unitId == null) {
+            log.warn("⚠️ [ElevatorCard] getHouseholdMembers called with null unitId");
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "unitId không được để trống"));
+        }
+        
+        log.debug("🔍 [ElevatorCard] getHouseholdMembers request: unitId={}, userId={}", unitId, userId);
+        
+        try {
+            String accessToken = extractAccessToken(headers);
+            List<Map<String, Object>> members = registrationService.getHouseholdMembersByUnit(unitId, userId, accessToken);
+            log.info("✅ [ElevatorCard] getHouseholdMembers success: {} members", members.size());
+            return ResponseEntity.ok(members);
+        } catch (IllegalStateException e) {
+            log.warn("⚠️ [ElevatorCard] Permission denied: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi lấy danh sách thành viên", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Không thể lấy danh sách thành viên: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{registrationId}")
+    public ResponseEntity<?> getRegistration(@PathVariable String registrationId,
+                                             @RequestHeader HttpHeaders headers) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            UUID registrationUuid = UUID.fromString(registrationId);
+            ElevatorCardRegistrationDto dto = registrationService.getRegistration(userId, registrationUuid);
+            return ResponseEntity.ok(toResponse(dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{registrationId}/cancel")
+    public ResponseEntity<?> cancelRegistration(@PathVariable String registrationId,
+                                                @RequestHeader HttpHeaders headers) {
+        UUID userId = jwtUtil.getUserIdFromHeaders(headers);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Unauthorized"));
+        }
+        try {
+            UUID registrationUuid = UUID.fromString(registrationId);
+            registrationService.cancelRegistration(userId, registrationUuid);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/vnpay/return")
+    public ResponseEntity<?> handleVnpayReturn(HttpServletRequest request) {
+        Map<String, String> params = vnpayService.extractParams(request);
+        try {
+            ElevatorCardPaymentResult result = registrationService.handleVnpayCallback(params);
+            Map<String, Object> body = buildVnpayResponse(result, params);
+            HttpStatus status = result.success() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(body);
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi xử lý callback", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/vnpay/redirect")
+    public ResponseEntity<?> redirectAfterPayment(HttpServletRequest request,
+                                                  HttpServletResponse response) throws IOException {
+        Map<String, String> params = vnpayService.extractParams(request);
+        ElevatorCardPaymentResult result;
+        try {
+            result = registrationService.handleVnpayCallback(params);
+        } catch (Exception e) {
+            log.error("❌ [ElevatorCard] Lỗi xử lý callback redirect", e);
+            // URL encode message to avoid Unicode characters in HTTP header
+            String encodedMessage = java.net.URLEncoder.encode(
+                    e.getMessage() != null ? e.getMessage() : "Unknown error",
+                    java.nio.charset.StandardCharsets.UTF_8
+            );
+            String fallback = "qhomeapp://vnpay-elevator-card-result?success=false&message=" + encodedMessage;
+            response.sendRedirect(fallback);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+
+        Map<String, Object> body = buildVnpayResponse(result, params);
+        String registrationId = result.registrationId() != null ? result.registrationId().toString() : "";
+        String responseCode = result.responseCode() != null 
+                ? java.net.URLEncoder.encode(result.responseCode(), java.nio.charset.StandardCharsets.UTF_8)
+                : "";
+        String message = result.message() != null 
+                ? java.net.URLEncoder.encode(result.message(), java.nio.charset.StandardCharsets.UTF_8)
+                : "";
+        String requestType = result.requestType() != null 
+                ? java.net.URLEncoder.encode(result.requestType(), java.nio.charset.StandardCharsets.UTF_8)
+                : "";
+        
+        String redirectUrl = new StringBuilder("qhomeapp://vnpay-elevator-card-result")
+                .append("?registrationId=").append(registrationId)
+                .append("&responseCode=").append(responseCode)
+                .append("&success=").append(result.success())
+                .append("&requestType=").append(requestType)
+                .append("&message=").append(message)
+                .toString();
+        response.sendRedirect(redirectUrl);
+        HttpStatus status = result.success() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(body);
+    }
+
+    private Map<String, Object> toResponse(ElevatorCardRegistrationDto dto) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", dto.id() != null ? dto.id().toString() : null);
+        body.put("userId", dto.userId() != null ? dto.userId().toString() : null);
+        body.put("unitId", dto.unitId() != null ? dto.unitId().toString() : null);
+        body.put("requestType", dto.requestType());
+        body.put("residentId", dto.residentId() != null ? dto.residentId().toString() : null);
+        body.put("fullName", dto.fullName());
+        body.put("apartmentNumber", dto.apartmentNumber());
+        body.put("buildingName", dto.buildingName());
+        body.put("citizenId", dto.citizenId());
+        body.put("phoneNumber", dto.phoneNumber());
+        body.put("note", dto.note());
+        body.put("status", dto.status());
+        body.put("paymentStatus", dto.paymentStatus());
+        body.put("paymentAmount", dto.paymentAmount());
+        body.put("paymentDate", dto.paymentDate());
+        body.put("paymentGateway", dto.paymentGateway());
+        body.put("vnpayTransactionRef", dto.vnpayTransactionRef());
+        body.put("adminNote", dto.adminNote());
+        body.put("approvedBy", dto.approvedBy() != null ? dto.approvedBy().toString() : null);
+        body.put("approvedAt", dto.approvedAt());
+        body.put("rejectionReason", dto.rejectionReason());
+        body.put("createdAt", dto.createdAt());
+        body.put("updatedAt", dto.updatedAt());
+        return body;
+    }
+
+    private Map<String, Object> buildVnpayResponse(ElevatorCardPaymentResult result, Map<String, String> params) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", result.success());
+        body.put("registrationId", result.registrationId() != null ? result.registrationId().toString() : null);
+        body.put("responseCode", result.responseCode());
+        body.put("signatureValid", result.signatureValid());
+        body.put("requestType", result.requestType());
+        body.put("message", result.message());
+        body.put("params", params);
+        return body;
+    }
+
+    private String extractAccessToken(HttpHeaders headers) {
+        String authHeader = headers.getFirst(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
+    }
+}
+
+

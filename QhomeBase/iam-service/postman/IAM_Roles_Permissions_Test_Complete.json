@@ -1,0 +1,1490 @@
+{
+	"info": {
+		"_postman_id": "iam-roles-permissions-test",
+		"name": "IAM Roles & Permissions Test",
+		"description": "Test collection for IAM service roles and permissions APIs with authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Generate Test Token - Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"username\": \"admin\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\",\n    \"roles\": [\"admin\"],\n    \"permissions\": [\"base.tenant.create\", \"base.tenant.read\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/generate-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Generate a test JWT token for Admin user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.token);",
+									"    console.log('Admin token saved:', response.token);",
+									"} else {",
+									"    console.log('Token generation failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Generate Test Token - Tenant Owner",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"660e8400-e29b-41d4-a716-446655440001\",\n    \"username\": \"tenant_owner\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\",\n    \"roles\": [\"tenant_owner\"],\n    \"permissions\": [\"base.tenant.read\", \"base.building.read\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/generate-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Generate a test JWT token for Tenant Owner user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('tenant_owner_token', response.token);",
+									"    console.log('Tenant Owner token saved:', response.token);",
+									"} else {",
+									"    console.log('Token generation failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Generate Test Token - Technician",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"770e8400-e29b-41d4-a716-446655440002\",\n    \"username\": \"technician\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\",\n    \"roles\": [\"technician\"],\n    \"permissions\": [\"base.building.read\", \"maintenance.work.read\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/generate-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Generate a test JWT token for Technician user"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('technician_token', response.token);",
+									"    console.log('Technician token saved:', response.token);",
+									"} else {",
+									"    console.log('Token generation failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Get User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/user-info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"user-info"
+							]
+						},
+						"description": "Get current user information from JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Public Endpoint",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/api/test/public",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"public"
+							]
+						},
+						"description": "Test public endpoint (no authentication required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Protected Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/protected",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"protected"
+							]
+						},
+						"description": "Test protected endpoint (authentication required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Admin Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"admin"
+							]
+						},
+						"description": "Test admin-only endpoint (admin role required)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Login Tests",
+			"item": [
+				{
+					"name": "Login - Admin User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+                            "raw": "{\n    \"username\": \"admin_test\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with admin user credentials"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('admin_login_token', response.accessToken);",
+                                    "    pm.collectionVariables.set('auth_token', response.accessToken);",
+                                    "    console.log('Admin login token saved:', response.accessToken);",
+                                    "} else {",
+                                    "    console.log('Admin login failed:', pm.response.text());",
+                                    "}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Tenant Owner User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+                            "raw": "{\n    \"username\": \"tenant_owner_test\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with tenant owner user credentials"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('tenant_owner_login_token', response.accessToken);",
+                                    "    pm.collectionVariables.set('auth_token', response.accessToken);",
+                                    "    console.log('Tenant Owner login token saved:', response.accessToken);",
+                                    "} else {",
+                                    "    console.log('Tenant Owner login failed:', pm.response.text());",
+                                    "}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Technician User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+                            "raw": "{\n    \"username\": \"technician_test\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with technician user credentials"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('technician_login_token', response.accessToken);",
+                                    "    pm.collectionVariables.set('auth_token', response.accessToken);",
+                                    "    console.log('Technician login token saved:', response.accessToken);",
+                                    "} else {",
+                                    "    console.log('Technician login failed:', pm.response.text());",
+                                    "}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Supporter User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+                            "raw": "{\n    \"username\": \"supporter_test\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with supporter user credentials"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('supporter_login_token', response.accessToken);",
+                                    "    pm.collectionVariables.set('auth_token', response.accessToken);",
+                                    "    console.log('Supporter login token saved:', response.accessToken);",
+                                    "} else {",
+                                    "    console.log('Supporter login failed:', pm.response.text());",
+                                    "}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Account User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+                            "raw": "{\n    \"username\": \"account_test\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with account user credentials"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('account_login_token', response.accessToken);",
+                                    "    pm.collectionVariables.set('auth_token', response.accessToken);",
+                                    "    console.log('Account login token saved:', response.accessToken);",
+                                    "} else {",
+                                    "    console.log('Account login failed:', pm.response.text());",
+                                    "}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Locked User (Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"locked_user\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with locked user credentials (should fail)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 403) {",
+									"    console.log('Locked user login correctly rejected:', pm.response.text());",
+									"} else {",
+									"    console.log('Unexpected response for locked user:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Inactive User (Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"inactive_user\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with inactive user credentials (should fail)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 403) {",
+									"    console.log('Inactive user login correctly rejected:', pm.response.text());",
+									"} else {",
+									"    console.log('Unexpected response for inactive user:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Wrong Password (Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"wrongpassword\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with wrong password (should fail)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 401) {",
+									"    console.log('Wrong password correctly rejected:', pm.response.text());",
+									"} else {",
+									"    console.log('Unexpected response for wrong password:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				},
+				{
+					"name": "Login - Non-existent User (Should Fail)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"nonexistent\",\n    \"password\": \"password\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with non-existent user (should fail)"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 401) {",
+									"    console.log('Non-existent user correctly rejected:', pm.response.text());",
+									"} else {",
+									"    console.log('Unexpected response for non-existent user:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles & Permissions Tests",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"all"
+							]
+						},
+						"description": "Get all available roles in the system"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions"
+							]
+						},
+						"description": "Get all permissions in the system"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Account",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/account",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"account"
+							]
+						},
+						"description": "Get permissions for ACCOUNT role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"admin"
+							]
+						},
+						"description": "Get permissions for ADMIN role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Tenant Owner",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/tenant-owner",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"tenant-owner"
+							]
+						},
+						"description": "Get permissions for TENANT_OWNER role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Technician",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/technician",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"technician"
+							]
+						},
+						"description": "Get permissions for TECHNICIAN role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Supporter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/supporter",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"supporter"
+							]
+						},
+						"description": "Get permissions for SUPPORTER role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role (Dynamic)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/{{role_name}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"{{role_name}}"
+							]
+						},
+						"description": "Get permissions for a specific role (use role_name variable)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Base Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/base-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"base-service"
+							]
+						},
+						"description": "Get all base service permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get IAM Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/iam-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"iam-service"
+							]
+						},
+						"description": "Get all IAM service permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Maintenance Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/maintenance-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"maintenance-service"
+							]
+						},
+						"description": "Get all maintenance service permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Finance Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/finance-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"finance-service"
+							]
+						},
+						"description": "Get all finance service permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permission by Code",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/permissions/{{permission_code}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions",
+								"{{permission_code}}"
+							]
+						},
+						"description": "Get specific permission by code (use permission_code variable)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Service Prefix",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/permissions/service/{{service_prefix}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions",
+								"service",
+								"{{service_prefix}}"
+							]
+						},
+						"description": "Get permissions by service prefix (e.g., base, iam, maintenance)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management Tests",
+			"item": [
+				{
+					"name": "Get Admin User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/550e8400-e29b-41d4-a716-446655440000",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"550e8400-e29b-41d4-a716-446655440000"
+							]
+						},
+						"description": "Get admin user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tenant Owner User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{tenant_owner_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/660e8400-e29b-41d4-a716-446655440001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"660e8400-e29b-41d4-a716-446655440001"
+							]
+						},
+						"description": "Get tenant owner user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Technician User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{technician_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/770e8400-e29b-41d4-a716-446655440002",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"770e8400-e29b-41d4-a716-446655440002"
+							]
+						},
+						"description": "Get technician user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Info by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Get user information by user ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Tenants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{user_id}}/tenants",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}",
+								"tenants"
+							]
+						},
+						"description": "Get all tenants for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Roles in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{user_id}}/tenant/{{tenant_id}}/roles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}",
+								"tenant",
+								"{{tenant_id}}",
+								"roles"
+							]
+						},
+						"description": "Get user roles in a specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate User Access",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{user_id}}/tenant/{{tenant_id}}/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}",
+								"tenant",
+								"{{tenant_id}}",
+								"validate"
+							]
+						},
+						"description": "Validate if user has access to a specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{user_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}",
+								"status"
+							]
+						},
+						"description": "Get user account status (active, locked, etc.)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenant Management Tests",
+			"item": [
+				{
+					"name": "Get Tenant Managers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenants/roles/{{tenant_id}}/managers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"roles",
+								"{{tenant_id}}",
+								"managers"
+							]
+						},
+						"description": "Get all managers for a specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users by Role in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/tenant/{{tenant_id}}/role/{{role_name}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"tenant",
+								"{{tenant_id}}",
+								"role",
+								"{{role_name}}",
+								"users"
+							]
+						},
+						"description": "Get all users with a specific role in a tenant"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Permission Management Tests",
+			"item": [
+				{
+					"name": "Create Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"test.permission.create\",\n    \"description\": \"Test permission for creating test resources\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions"
+							]
+						},
+						"description": "Create a new permission"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Permission",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"test.permission.create\",\n    \"description\": \"Updated test permission for creating test resources\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/permissions/{{permission_code}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions",
+								"{{permission_code}}"
+							]
+						},
+						"description": "Update an existing permission"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Permission",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/permissions/{{permission_code}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"permissions",
+								"{{permission_code}}"
+							]
+						},
+						"description": "Delete a permission"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8088",
+			"description": "Base URL for IAM service"
+		},
+		{
+			"key": "role_name",
+			"value": "admin",
+			"description": "Role name for dynamic role testing (admin, account, tenant_owner, technician, supporter)"
+		},
+		{
+			"key": "permission_code",
+			"value": "base.tenant.create",
+			"description": "Permission code for testing specific permission"
+		},
+		{
+			"key": "service_prefix",
+			"value": "base",
+			"description": "Service prefix for testing (base, iam, maintenance, finance, document, report, system)"
+		},
+		{
+			"key": "user_id",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"description": "User ID for testing user-related endpoints"
+		},
+		{
+			"key": "tenant_id",
+			"value": "2b5b2af5-9431-4649-8144-35830d866826",
+			"description": "Tenant ID for testing tenant-related endpoints"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"description": "Authentication token (will be set automatically from token generation response)"
+		},
+		{
+			"key": "admin_login_token",
+			"value": "",
+			"description": "Admin user login token (will be set automatically from login response)"
+		},
+		{
+			"key": "tenant_owner_login_token",
+			"value": "",
+			"description": "Tenant Owner user login token (will be set automatically from login response)"
+		},
+		{
+			"key": "technician_login_token",
+			"value": "",
+			"description": "Technician user login token (will be set automatically from login response)"
+		},
+		{
+			"key": "supporter_login_token",
+			"value": "",
+			"description": "Supporter user login token (will be set automatically from login response)"
+		},
+		{
+			"key": "account_login_token",
+			"value": "",
+			"description": "Account user login token (will be set automatically from login response)"
+		}
+	]
+}

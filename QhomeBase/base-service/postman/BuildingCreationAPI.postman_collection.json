@@ -1,0 +1,917 @@
+{
+	"info": {
+		"_postman_id": "building-management-api",
+		"name": "Building Management API",
+		"description": "Luồng test đầy đủ cho Building CRUD và quy trình xóa Building (deletion request -> approve -> complete).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication & Token Setup",
+			"item": [
+				{
+					"name": "1.1 Generate Admin Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const payload = pm.response.json();",
+									"if (payload && payload.accessToken) {",
+									"    pm.environment.set('admin_token', payload.accessToken);",
+									"    console.log('Admin login success');",
+									"} else {",
+									"    console.log('Login response missing accessToken:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/auth/login",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Đăng nhập lấy accessToken cho admin (quyền quản lý building)."
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Generate Supporter Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const payload = pm.response.json();",
+									"if (payload && payload.accessToken) {",
+									"    pm.environment.set('supporter_token', payload.accessToken);",
+									"    console.log('Supporter login success');",
+									"} else {",
+									"    console.log('Login response missing accessToken:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{supporter_username}}\",\n  \"password\": \"{{supporter_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/auth/login",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Đăng nhập supporter để thao tác tạo/cập nhật/yêu cầu xóa building."
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Generate Viewer Token (No Permission)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const payload = pm.response.json();",
+									"if (payload && payload.accessToken) {",
+									"    pm.environment.set('viewer_token', payload.accessToken);",
+									"    console.log('Viewer login success');",
+									"} else {",
+									"    console.log('Login response missing accessToken:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{viewer_username}}\",\n  \"password\": \"{{viewer_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/auth/login",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Đăng nhập người dùng không có quyền quản lý building để test 403."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Unit Management",
+			"item": [
+				{
+					"name": "4.1 Create Unit",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('Unit created has id', function () {",
+									"    pm.expect(body).to.have.property('id');",
+									"});",
+									"pm.environment.set('created_unit_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{supporter_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"buildingId\": \"{{created_building_id}}\",\n  \"code\": \"{{created_building_code}}-U01\",\n  \"floor\": 1,\n  \"areaM2\": 65.5,\n  \"bedrooms\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/units",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Tạo căn hộ mới thuộc building vừa tạo."
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 List Units By Building",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{supporter_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/units/building/{{created_building_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"building",
+								"{{created_building_id}}"
+							]
+						},
+						"description": "Danh sách tất cả căn hộ thuộc building vừa tạo."
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Update Unit",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"floor\": 2,\n  \"areaM2\": 70,\n  \"bedrooms\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/units/{{created_unit_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{created_unit_id}}"
+							]
+						},
+						"description": "Cập nhật thông tin căn hộ (dùng admin token)."
+					},
+					"response": []
+				},
+				{
+					"name": "4.4 Delete Unit (Soft)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/units/{{created_unit_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{created_unit_id}}"
+							]
+						},
+						"description": "Đặt trạng thái unit về INACTIVE (soft delete)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Building CRUD",
+			"item": [
+				{
+					"name": "2.1 Create Building",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const body = pm.response.json();",
+									"pm.test('Response contains building id', function () {",
+									"    pm.expect(body).to.have.property('id');",
+									"});",
+									"",
+									"pm.environment.set('created_building_id', body.id);",
+									"pm.environment.set('created_building_code', body.code);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{supporter_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Tòa Alpha - Khu dân cư QHome\",\n  \"address\": \"123 Đường Phổ Quang, Quận 3, TP.HCM\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							]
+						},
+						"description": "Tạo mới một building, sử dụng supporter token."
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Get Building By ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Return building matches created id', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.id).to.eql(pm.environment.get('created_building_id'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{created_building_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{created_building_id}}"
+							]
+						},
+						"description": "Lấy building vừa tạo theo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 List All Buildings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is array', function () {",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{supporter_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							]
+						},
+						"description": "Danh sách toàn bộ building đang có."
+					},
+					"response": []
+				},
+				{
+					"name": "2.4 Update Building",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const body = pm.response.json();",
+									"pm.test('Building name updated', function () {",
+									"    pm.expect(body.name).to.eql('Tòa Alpha - Đã cập nhật');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Tòa Alpha - Đã cập nhật\",\n  \"address\": \"123 Đường Phổ Quang, Quận 3, TP.HCM\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{created_building_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{created_building_id}}"
+							]
+						},
+						"description": "Cập nhật thông tin building sử dụng admin token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Building Deletion Workflow",
+			"item": [
+				{
+					"name": "3.1 Create Deletion Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const body = pm.response.json();",
+									"pm.test('Deletion request created', function () {",
+									"    pm.expect(body).to.have.property('id');",
+									"});",
+									"pm.environment.set('deletion_request_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{supporter_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"buildingId\": \"{{created_building_id}}\",\n  \"reason\": \"Testing building deletion flow\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{created_building_id}}/deletion-request",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{created_building_id}}",
+								"deletion-request"
+							]
+						},
+						"description": "Tạo yêu cầu xóa building, lưu lại deletion_request_id."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 List Pending Deletion Requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Pending list contains request', function () {",
+									"    const list = pm.response.json();",
+									"    const currentId = pm.environment.get('deletion_request_id');",
+									"    const found = list.find(item => item.id === currentId);",
+									"    pm.expect(found).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/deletion-requests/pending",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"deletion-requests",
+								"pending"
+							]
+						},
+						"description": "Danh sách các yêu cầu xóa đang chờ duyệt."
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Approve Deletion Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Request status is APPROVED', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.status).to.eql('APPROVED');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Approve deletion for automation test\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/deletion-requests/{{deletion_request_id}}/approve",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"deletion-requests",
+								"{{deletion_request_id}}",
+								"approve"
+							]
+						},
+						"description": "Phê duyệt yêu cầu xóa building."
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 Complete Building Deletion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Deletion request is COMPLETED', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.status).to.eql('COMPLETED');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{deletion_request_id}}/complete",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{deletion_request_id}}",
+								"complete"
+							]
+						},
+						"description": "Hoàn tất quy trình xóa building sau khi đã approved."
+					},
+					"response": []
+				},
+				{
+					"name": "3.5 Get Deleting Buildings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/deleting",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"deleting"
+							]
+						},
+						"description": "Danh sách các building đang trong trạng thái INACTIVE (đang chờ hoàn tất xóa)."
+					},
+					"response": []
+				},
+				{
+					"name": "3.6 Get Deletion Targets Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{created_building_id}}/targets-status",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{created_building_id}}",
+								"targets-status"
+							]
+						},
+						"description": "Theo dõi tiến độ xử lý các đối tượng liên quan của building trong quá trình xóa."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Security Regression Checks",
+			"item": [
+				{
+					"name": "4.1 Create Building Without Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 401', function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Unauthorized Building\",\n  \"address\": \"No token provided\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							]
+						},
+						"description": "Đảm bảo endpoint yêu cầu auth."
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Update Building With Viewer Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 403', function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{viewer_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Viewer Update Attempt\",\n  \"address\": \"Should be forbidden\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{created_building_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{created_building_id}}"
+							]
+						},
+						"description": "Viewer không có quyền update building."
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Approve Deletion With Viewer Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 403', function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{viewer_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Should not be allowed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/deletion-requests/{{deletion_request_id}}/approve",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"deletion-requests",
+								"{{deletion_request_id}}",
+								"approve"
+							]
+						},
+						"description": "Đảm bảo user không quyền không thể approve."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [],
+	"variable": []
+}

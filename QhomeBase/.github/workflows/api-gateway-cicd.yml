@@ -1,0 +1,17 @@
+name: api-gateway CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api-gateway/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: api-gateway
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/api-gateway

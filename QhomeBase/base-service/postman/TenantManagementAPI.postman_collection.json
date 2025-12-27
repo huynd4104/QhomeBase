@@ -1,0 +1,1255 @@
+{
+	"info": {
+		"_postman_id": "tenant-management-api-v2",
+		"name": "Tenant Management API v2",
+		"description": "Complete API collection for QhomeBase Tenant management operations with fresh test data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication & Token Setup",
+			"item": [
+				{
+					"name": "Generate User Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.token) {",
+									"        pm.environment.set('access_token', response.token);",
+									"        console.log('User token generated and stored');",
+									"        ",
+									"        // Extract tenant ID from token",
+									"        try {",
+									"            const parts = response.token.split('.');",
+									"            const payload = JSON.parse(atob(parts[1]));",
+									"            const tid = payload.tenant || payload.tenantId;",
+									"            if (tid) {",
+									"                pm.environment.set('tenant_id', tid);",
+									"                console.log('Tenant ID extracted:', tid);",
+									"            }",
+									"        } catch (e) {",
+									"            console.log('Cannot decode JWT payload:', e.message);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"qhomebase_manager_2025\",\n  \"uid\": \"550e8400-e29b-41d4-a716-446655440011\",\n  \"tenantId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"roles\": [\"tenant_manager\", \"tenant_owner\"],\n  \"permissions\": [\"base.tenant.create\", \"base.tenant.read\", \"base.tenant.update\", \"base.tenant.delete\", \"base.tenant.delete.request\", \"base.tenant.delete.approve\"]\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/test/generate-token",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Tạo JWT token cho tenant manager để test API"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Admin Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.token) {",
+									"        pm.environment.set('admin_access_token', response.token);",
+									"        console.log('Admin token generated and stored');",
+									"        ",
+									"        // Extract tenant ID from token",
+									"        try {",
+									"            const parts = response.token.split('.');",
+									"            const payload = JSON.parse(atob(parts[1]));",
+									"            const tid = payload.tenant || payload.tenantId;",
+									"            if (tid) {",
+									"                pm.environment.set('tenant_id', tid);",
+									"                console.log('Tenant ID extracted:', tid);",
+									"            }",
+									"        } catch (e) {",
+									"            console.log('Cannot decode JWT payload:', e.message);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"qhomebase_admin_2025\",\n  \"uid\": \"550e8400-e29b-41d4-a716-446655440013\",\n  \"tenantId\": \"550e8400-e29b-41d4-a716-446655440012\",\n  \"roles\": [\"admin\", \"tenant_owner\", \"tenant_manager\"],\n  \"permissions\": [\"base.tenant.create\", \"base.tenant.read\", \"base.tenant.update\", \"base.tenant.delete\", \"base.tenant.delete.request\", \"base.tenant.delete.approve\", \"base.building.delete.approve\"]\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/test/generate-token",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Tạo JWT admin token để test approval operations"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Tenant CRUD Operations",
+			"item": [
+				{
+					"name": "Create New Tenant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE TENANT RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('tenant_id', response.id);",
+									"        console.log('✅ New Tenant ID extracted and stored:', response.id);",
+									"        console.log('Tenant Name:', response.name);",
+									"        console.log('Tenant Code:', response.code);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"QHOME2025\",\n  \"name\": \"QhomeBase Smart Tower\",\n  \"contact\": \"+84 901 234 567\",\n  \"email\": \"contact@qhomebase2025.com\",\n  \"address\": \"123 Innovation District, Ho Chi Minh City\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Modern smart building management system for 2025 testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants"
+							]
+						},
+						"description": "Tạo tenant mới với dữ liệu 2025"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Tenants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants"
+							]
+						},
+						"description": "Lấy danh sách tất cả tenants"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tenant by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants/{{tenant_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Lấy thông tin chi tiết tenant theo ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Tenant",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"QhomeBase Smart Tower - Updated\",\n  \"contact\": \"+84 901 234 567\",\n  \"email\": \"updated@qhomebase2025.com\",\n  \"address\": \"123 Innovation District, Ho Chi Minh City - Updated\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Updated modern smart building management system for 2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants/{{tenant_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Cập nhật thông tin tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug All Tenants",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants/debug-all",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"debug-all"
+							]
+						},
+						"description": "Debug endpoint - xem tất cả tenants trong database"
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Environment Variables",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Clear all old environment variables",
+									"pm.environment.unset('tenant_id');",
+									"pm.environment.unset('user_id');",
+									"pm.environment.unset('building_id');",
+									"pm.environment.unset('unit_id');",
+									"pm.environment.unset('deletion_request_id');",
+									"pm.environment.unset('building_deletion_request_id');",
+									"pm.environment.unset('access_token');",
+									"pm.environment.unset('admin_access_token');",
+									"",
+									"console.log('=== Environment Variables RESET ===');",
+									"console.log('All environment variables have been cleared');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenants/test",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"test"
+							]
+						},
+						"description": "Reset tất cả environment variables về trạng thái sạch"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Building & Unit Management",
+			"item": [
+				{
+					"name": "Create Building",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE BUILDING RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"console.log('Using Tenant ID:', pm.environment.get('tenant_id'));",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('building_id', response.id);",
+									"        console.log('✅ Building ID extracted and stored:', response.id);",
+									"        console.log('Building Name:', response.name);",
+									"        console.log('Building Tenant ID:', response.tenantId);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"QhomeBase Main Building\",\n  \"address\": \"456 Smart Street, Ho Chi Minh City\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings?tenantId={{tenant_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Tạo building mới cho tenant (truyền tenantId qua query parameter)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Building (Alternative Endpoint)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE BUILDING RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"console.log('Using Tenant ID:', pm.environment.get('tenant_id'));",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('building_id', response.id);",
+									"        console.log('✅ Building ID extracted and stored:', response.id);",
+									"        console.log('Building Name:', response.name);",
+									"        console.log('Building Tenant ID:', response.tenantId);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"QhomeBase Tower B\",\n  \"address\": \"789 Innovation Avenue, Ho Chi Minh City\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings?tenantId={{tenant_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Tạo building mới sử dụng buildingController endpoint (POST /api/buildings/create)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Building (BuildingCreateController)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE BUILDING RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"console.log('Using Tenant ID:', pm.environment.get('tenant_id'));",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('building_id', response.id);",
+									"        console.log('✅ Building ID extracted and stored:', response.id);",
+									"        console.log('Building Name:', response.name);",
+									"        console.log('Building Tenant ID:', response.tenantId);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"QhomeBase Tower C\",\n  \"address\": \"321 Smart Avenue, Ho Chi Minh City\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							]
+						},
+						"description": "Tạo building mới sử dụng BuildingCreateController endpoint (POST /api/buildings) - tenantId từ JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Unit",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE UNIT RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"console.log('Using Building ID:', pm.environment.get('building_id'));",
+									"console.log('Using Tenant ID:', pm.environment.get('tenant_id'));",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('unit_id', response.id);",
+									"        console.log('✅ Unit ID extracted and stored:', response.id);",
+									"        console.log('Unit Name:', response.name);",
+									"        console.log('Unit Code:', response.code);",
+									"        console.log('Unit Building ID:', response.buildingId);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"buildingId\": \"{{building_id}}\",\n  \"code\": \"UNIT2025\",\n  \"name\": \"Smart Office Unit 2025\",\n  \"area\": 85.5,\n  \"status\": \"ACTIVE\",\n  \"description\": \"Modern smart office unit in QhomeBase Main Building 2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/units",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Tạo unit mới trong building"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Buildings by Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings?tenantId={{tenant_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Lấy danh sách buildings của tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Units by Building",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/units?buildingId={{building_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							],
+							"query": [
+								{
+									"key": "buildingId",
+									"value": "{{building_id}}"
+								}
+							]
+						},
+						"description": "Lấy danh sách units trong building"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Tenant Deletion Workflow",
+			"item": [
+				{
+					"name": "Create Tenant Deletion Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== CREATE TENANT DELETION REQUEST RESPONSE ===');",
+									"console.log('Response Status:', pm.response.status);",
+									"console.log('Response Body:', pm.response.text());",
+									"console.log('Using Tenant ID:', pm.environment.get('tenant_id'));",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    console.log('Parsed Response:', response);",
+									"    ",
+									"    if (response && response.id) {",
+									"        pm.environment.set('deletion_request_id', response.id);",
+									"        console.log('✅ Deletion request ID extracted and stored:', response.id);",
+									"        console.log('Request Status:', response.status);",
+									"        console.log('Request Reason:', response.reason);",
+									"        console.log('Request Tenant ID:', response.tenantId);",
+									"    } else {",
+									"        console.log('❌ No ID found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Request failed with status:', pm.response.status);",
+									"    console.log('Error:', pm.response.text());",
+									"}",
+									"console.log('=====================================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tenantId\": \"{{tenant_id}}\",\n  \"reason\": \"QhomeBase 2025 migration completed, legacy system no longer needed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions"
+							]
+						},
+						"description": "Tạo request xóa tenant với lý do 2025"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Tenant Deletion Requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (Array.isArray(response) && response.length > 0) {",
+									"        pm.environment.set('deletion_request_id', response[0].id);",
+									"        console.log('Deletion request ID extracted from array:', response[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions/my-requests",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions",
+								"my-requests"
+							]
+						},
+						"description": "Tenant owner xem danh sách tenant deletion requests của mình"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Tenant Deletion Requests (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions"
+							]
+						},
+						"description": "Admin xem danh sách tất cả tenant deletion requests"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deletion Request by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions/{{deletion_request_id}}",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions",
+								"{{deletion_request_id}}"
+							]
+						},
+						"description": "Admin xem chi tiết tenant deletion request"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Targets Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions/{{deletion_request_id}}/targets-status",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions",
+								"{{deletion_request_id}}",
+								"targets-status"
+							]
+						},
+						"description": "Admin xem status của các targets (buildings, units) để kiểm tra trước khi complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Tenant Deletion Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Approved after reviewing QhomeBase 2025 migration requirements and ensuring no active dependencies\"\n}"
+						},
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions/{{deletion_request_id}}/approve",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions",
+								"{{deletion_request_id}}",
+								"approve"
+							]
+						},
+						"description": "Admin approve tenant deletion request (chuyển tất cả buildings, units sang INACTIVE)"
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Tenant Deletion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/tenant-deletions/{{deletion_request_id}}/complete",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-deletions",
+								"{{deletion_request_id}}",
+								"complete"
+							]
+						},
+						"description": "Admin complete tenant deletion sau khi tất cả targets đã ARCHIVED/INACTIVE"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Building Deletion Workflow",
+			"item": [
+				{
+					"name": "Get Buildings Under Maintenance (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (Array.isArray(response) && response.length > 0) {",
+									"        pm.environment.set('building_deletion_request_id', response[0].id);",
+									"        console.log('Building deletion request ID extracted:', response[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/deleting",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"deleting"
+							]
+						},
+						"description": "Admin xem danh sách buildings đang ở trạng thái INACTIVE (tìm trực tiếp trong Building table)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Buildings Under Maintenance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/my-deleting-buildings",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"my-deleting-buildings"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Tenant owner xem danh sách buildings đang INACTIVE thuộc về tenant của mình (qua BuildingDeletionRequest)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Buildings Under Maintenance (Raw)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/my-deleting-buildings-raw",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"my-deleting-buildings-raw"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Tenant owner xem trực tiếp danh sách buildings có status INACTIVE của mình (raw Building objects)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Building Targets Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{building_id}}/targets-status",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{building_id}}",
+								"targets-status"
+							]
+						},
+						"description": "Admin xem status của units trong building để kiểm tra trước khi complete building deletion"
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Building Deletion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/{{building_deletion_request_id}}/complete",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"{{building_deletion_request_id}}",
+								"complete"
+							]
+						},
+						"description": "Admin complete building deletion request sau khi tất cả units đã INACTIVE"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Debug & Status Check",
+			"item": [
+				{
+					"name": "Get All Building Deletion Requests (Debug)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/all",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"all"
+							]
+						},
+						"description": "Debug - xem tất cả building deletion requests để kiểm tra data"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My All Building Deletion Requests (Debug)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_service_url}}/api/buildings/my-all",
+							"host": [
+								"{{base_service_url}}"
+							],
+							"path": [
+								"api",
+								"buildings",
+								"my-all"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Debug - xem tất cả building deletion requests của tenant để kiểm tra status"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Debug: Log current environment variables",
+					"console.log('=== QhomeBase 2025 Environment Variables ===');",
+					"console.log('- tenant_id:', pm.environment.get('tenant_id'));",
+					"console.log('- user_id:', pm.environment.get('user_id'));",
+					"console.log('- building_id:', pm.environment.get('building_id'));",
+					"console.log('- unit_id:', pm.environment.get('unit_id'));",
+					"console.log('- deletion_request_id:', pm.environment.get('deletion_request_id'));",
+					"console.log('- building_deletion_request_id:', pm.environment.get('building_deletion_request_id'));",
+					"console.log('- access_token:', pm.environment.get('access_token') ? 'SET' : 'NOT SET');",
+					"console.log('- admin_access_token:', pm.environment.get('admin_access_token') ? 'SET' : 'NOT SET');",
+					"console.log('===========================================');",
+					"",
+					"// Note: IDs will be automatically extracted from API responses",
+					"// No need to force set them anymore"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common test assertions",
+					"pm.test('Response time is less than 5000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test('Response has proper content type', function () {",
+					"    if (pm.response.headers.get('Content-Type')) {",
+					"        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"    }",
+					"});",
+					"",
+					"// Log response for debugging",
+					"console.log('=== QhomeBase 2025 API Response ===');",
+					"console.log('Response Status:', pm.response.status);",
+					"console.log('Response Time:', pm.response.responseTime + 'ms');",
+					"",
+					"if (pm.response.code >= 400) {",
+					"    console.log('Error Response:', pm.response.text());",
+					"} else {",
+					"    console.log('Success Response:', pm.response.text());",
+					"}",
+					"console.log('====================================');"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_service_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "iam_service_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "tenant_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "building_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "unit_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "deletion_request_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "building_deletion_request_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

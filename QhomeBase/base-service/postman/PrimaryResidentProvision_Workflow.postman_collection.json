@@ -1,0 +1,406 @@
+{
+	"info": {
+		"name": "Primary Resident Provision Workflow",
+		"description": "Workflow to provision a primary resident for a household and verify IAM account creation/email dispatch.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseServiceUrl",
+			"value": "{{baseServiceUrl}}",
+			"type": "string"
+		},
+		{
+			"key": "iamServiceUrl",
+			"value": "{{iamServiceUrl}}",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "{{adminToken}}",
+			"type": "string"
+		},
+		{
+			"key": "householdId",
+			"value": "{{householdId}}",
+			"type": "string"
+		},
+		{
+			"key": "residentFullName",
+			"value": "{{residentFullName}}",
+			"type": "string"
+		},
+		{
+			"key": "residentPhone",
+			"value": "{{residentPhone}}",
+			"type": "string"
+		},
+		{
+			"key": "residentEmail",
+			"value": "{{residentEmail}}",
+			"type": "string"
+		},
+		{
+			"key": "residentNationalId",
+			"value": "{{residentNationalId}}",
+			"type": "string"
+		},
+		{
+			"key": "residentDob",
+			"value": "{{residentDob}}",
+			"type": "string"
+		},
+		{
+			"key": "provisionResidentId",
+			"value": "{{provisionResidentId}}",
+			"type": "string"
+		},
+		{
+			"key": "provisionMemberId",
+			"value": "{{provisionMemberId}}",
+			"type": "string"
+		},
+		{
+			"key": "provisionUserId",
+			"value": "{{provisionUserId}}",
+			"type": "string"
+		},
+		{
+			"key": "provisionUsername",
+			"value": "{{provisionUsername}}",
+			"type": "string"
+		},
+		{
+			"key": "provisionEmail",
+			"value": "{{provisionEmail}}",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const data = pm.response.json();",
+									"    const token = data.accessToken || data.token;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('adminToken', 'Bearer ' + token);",
+									"        pm.environment.set('adminToken', 'Bearer ' + token);",
+									"        console.log('✅ Admin token saved');",
+									"    } else {",
+									"        console.log('⚠️ Token not found in response');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Login failed: ' + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{adminUsername}}\",\n    \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iamServiceUrl}}/api/auth/login",
+							"host": ["{{iamServiceUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Authenticate as an admin to obtain JWT token for provisioning request."
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Setup Building / Unit / Household",
+			"item": [
+				{
+					"name": "Create Building (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{buildingCode}}\",\n    \"name\": \"{{buildingName}}\",\n    \"address\": \"{{buildingAddress}}\",\n    \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/buildings",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "buildings"]
+						},
+						"description": "Create a building to host the new household."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const data = pm.response.json();",
+									"    pm.collectionVariables.set('buildingId', data.id);",
+									"    pm.environment.set('buildingId', data.id);",
+									"    console.log('✅ Building created: ' + data.id);",
+									"} else {",
+									"    console.log('⚠️ Building creation response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Unit (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"buildingId\": \"{{buildingId}}\",\n    \"floor\": {{unitFloor}},\n    \"areaM2\": {{unitArea}},\n    \"bedrooms\": {{unitBedrooms}}\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/units",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "units"]
+						},
+						"description": "Create a unit in the new building. Unit code is auto-generated."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const data = pm.response.json();",
+									"    pm.collectionVariables.set('unitId', data.id);",
+									"    pm.environment.set('unitId', data.id);",
+									"    console.log('✅ Unit created: ' + data.id + ' code=' + data.code);",
+									"} else {",
+									"    console.log('⚠️ Unit creation response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Household for Unit (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"unitId\": \"{{unitId}}\",\n    \"kind\": \"OWNER\",\n    \"startDate\": \"{{householdStartDate}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/households",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "households"]
+						},
+						"description": "Create a household tied to the unit so a primary resident can be provisioned."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const data = pm.response.json();",
+									"    pm.collectionVariables.set('householdId', data.id);",
+									"    pm.environment.set('householdId', data.id);",
+									"    console.log('✅ Household created: ' + data.id);",
+									"} else {",
+									"    console.log('⚠️ Household creation response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Provision Primary Resident",
+			"item": [
+				{
+					"name": "Provision Primary Resident (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const data = pm.response.json();",
+									"    if (data.residentId) {",
+									"        pm.collectionVariables.set('provisionResidentId', data.residentId);",
+									"        pm.environment.set('provisionResidentId', data.residentId);",
+									"        console.log('✅ residentId saved: ' + data.residentId);",
+									"    }",
+									"    if (data.householdMemberId) {",
+									"        pm.collectionVariables.set('provisionMemberId', data.householdMemberId);",
+									"        pm.environment.set('provisionMemberId', data.householdMemberId);",
+									"        console.log('✅ householdMemberId saved: ' + data.householdMemberId);",
+									"    }",
+									"    if (data.account) {",
+									"        if (data.account.userId) {",
+									"            pm.collectionVariables.set('provisionUserId', data.account.userId);",
+									"            pm.environment.set('provisionUserId', data.account.userId);",
+									"            console.log('✅ IAM userId saved: ' + data.account.userId);",
+									"        }",
+									"        if (data.account.username) {",
+									"            pm.collectionVariables.set('provisionUsername', data.account.username);",
+								"            pm.environment.set('provisionUsername', data.account.username);",
+									"            console.log('✅ IAM username saved: ' + data.account.username);",
+									"        }",
+									"        if (data.account.email) {",
+									"            pm.collectionVariables.set('provisionEmail', data.account.email);",
+									"            pm.environment.set('provisionEmail', data.account.email);",
+									"            console.log('✅ IAM email saved: ' + data.account.email);",
+									"        }",
+									"        pm.test('Account data returned', function () {",
+									"            pm.expect(data.account).to.have.property('username');",
+									"            pm.expect(data.account).to.have.property('email');",
+									"            pm.expect(data.account.active).to.eql(true);",
+									"        });",
+									"    } else {",
+									"        pm.test('Account data missing', function () {",
+									"            pm.expect.fail('Expected account info in response');",
+									"        });",
+									"    }",
+									"} else {",
+									"    pm.test('Provision request failed', function () {",
+									"        pm.expect.fail('HTTP ' + pm.response.code + ': ' + pm.response.text());",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"resident\": {\n        \"fullName\": \"{{residentFullName}}\",\n        \"phone\": \"{{residentPhone}}\",\n        \"email\": \"{{residentEmail}}\",\n        \"nationalId\": \"{{residentNationalId}}\",\n        \"dob\": \"{{residentDob}}\"\n    },\n    \"account\": {\n        \"autoGenerate\": true\n    },\n    \"relation\": \"Chủ hộ\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/households/{{householdId}}/primary-resident/provision",
+							"host": ["{{baseServiceUrl}}"],
+							"path": [
+								"api",
+								"households",
+								"{{householdId}}",
+								"primary-resident",
+								"provision"
+							]
+						},
+						"description": "Provision a primary resident for the specified household and trigger IAM account creation + email dispatch."
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Verification",
+			"description": "Optional verification requests after provisioning.",
+			"item": [
+				{
+					"name": "Get Resident Account Info (IAM)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{iamServiceUrl}}/api/users/{{provisionUserId}}/account-info",
+							"host": ["{{iamServiceUrl}}"],
+							"path": [
+								"api",
+								"users",
+								"{{provisionUserId}}",
+								"account-info"
+							]
+						},
+						"description": "Confirm the newly created IAM account (requires admin permissions)."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const data = pm.response.json();",
+									"    pm.test('Account matches provisioned email', function () {",
+									"        pm.expect(data.email).to.eql(pm.collectionVariables.get('provisionEmail'));",
+									"    });",
+									"} else {",
+									"    console.log('⚠️ Unable to fetch IAM account. Response:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
+

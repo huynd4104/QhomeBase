@@ -1,0 +1,2060 @@
+{
+	"info": {
+		"_postman_id": "iam-service-api-collection",
+		"name": "IAM Service API",
+		"description": "Collection for testing IAM service APIs including user management, roles, and permissions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Token Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-token"
+							]
+						},
+						"description": "Debug JWT token information and permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Authorization",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-authz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-authz"
+							]
+						},
+						"description": "Debug authorization service methods"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints"
+		},
+		{
+			"name": "Role Assignment",
+			"item": [
+				{
+					"name": "Get User Roles in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/{{target_user_id}}/tenant/{{tenant_id}}/roles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{target_user_id}}",
+								"tenant",
+								"{{tenant_id}}",
+								"roles"
+							]
+						},
+						"description": "Get user roles in specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users by Role in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/tenant/{{tenant_id}}/role/{{role_name}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"tenant",
+								"{{tenant_id}}",
+								"role",
+								"{{role_name}}",
+								"users"
+							]
+						},
+						"description": "Get all users with specific role in tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"all"
+							]
+						},
+						"description": "Get all available roles in the system"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/admin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"admin"
+							]
+						},
+						"description": "Get permissions for admin role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Tenant Owner",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/tenant_owner",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"tenant_owner"
+							]
+						},
+						"description": "Get permissions for tenant_owner role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Technician",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/technician",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"technician"
+							]
+						},
+						"description": "Get permissions for technician role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Supporter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/supporter",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"supporter"
+							]
+						},
+						"description": "Get permissions for supporter role"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Role - Account",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/role/account",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"role",
+								"account"
+							]
+						},
+						"description": "Get permissions for account role"
+					},
+					"response": []
+				}
+			],
+			"description": "Role and user management operations"
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/user-info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"user-info"
+							]
+						},
+						"description": "Get current user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Roles in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/user/{{target_user_id}}/tenant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"user",
+								"{{target_user_id}}",
+								"tenant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get user roles in specific tenant"
+					},
+					"response": []
+				}
+			],
+			"description": "User management and validation"
+		},
+		{
+			"name": "Permission Management",
+			"item": [
+				{
+					"name": "Get All Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"all"
+							]
+						},
+						"description": "Get all available permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Base Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/base-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"base-service"
+							]
+						},
+						"description": "Get permissions for base service"
+					},
+					"response": []
+				},
+				{
+					"name": "Get IAM Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/iam-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"iam-service"
+							]
+						},
+						"description": "Get permissions for IAM service"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Maintenance Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/maintenance-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"maintenance-service"
+							]
+						},
+						"description": "Get permissions for maintenance service"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Finance Service Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/permissions/finance-service",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"permissions",
+								"finance-service"
+							]
+						},
+						"description": "Get permissions for finance service"
+					},
+					"response": []
+				}
+			],
+			"description": "Permission management and queries"
+		},
+		{
+			"name": "Employee Role Management",
+			"item": [
+				{
+					"name": "Get Employees in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/tenant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"tenant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get all employees in a specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Roles for Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/available-roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"available-roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get available roles that can be assigned in tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Employee Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/employee/{{target_user_id}}?tenantId={{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"employee",
+								"{{target_user_id}}"
+							],
+							"query": [
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific employee"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Roles to Employee",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\"{{role_name}}\"]"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/assign",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"assign"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{target_user_id}}"
+								},
+								{
+									"key": "tenantId",
+									"value": "{{tenant_id}}"
+								}
+							]
+						},
+						"description": "Assign roles to an employee (assignedBy is automatically taken from JWT)"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Roles from Employee",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{target_user_id}}\",\n  \"tenantId\": \"{{tenant_id}}\",\n  \"roleNames\": [\"{{role_name}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/remove",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"remove"
+							]
+						},
+						"description": "Remove roles from an employee (removedBy is automatically taken from JWT)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Permissions Grouped",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/available-permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"available-permissions"
+							]
+						},
+						"description": "Get available permissions grouped by service"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Employees by Role",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/tenant/{{tenant_id}}/role/{{role_name}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"tenant",
+								"{{tenant_id}}",
+								"role",
+								"{{role_name}}"
+							]
+						},
+						"description": "Get all employees with specific role in tenant"
+					},
+					"response": []
+				}
+			],
+			"description": "Employee role management operations"
+		},
+		{
+			"name": "Tenant Role Permission Management",
+			"item": [
+				{
+					"name": "Get All Effective Permissions in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/permissions/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"permissions",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get all effective permissions in tenant - combines base permissions + tenant grants - tenant denies"
+					},
+					"response": []
+				},
+				{
+					"name": "Grant Permissions to Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"{{role_name}}\",\n  \"permissionCodes\": [\"iam.role.read\", \"iam.role.write\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/grant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"grant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Grant permissions to a role in tenant (grantedBy is automatically taken from JWT)"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Permissions from Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"{{role_name}}\",\n  \"permissionCodes\": [\"iam.role.write\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/revoke/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"revoke",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Revoke permissions from a role in tenant (revokedBy is automatically taken from JWT)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role Permission Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/summary/{{tenant_id}}/{{role_name}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{role_name}}"
+							]
+						},
+						"description": "Get permission summary for a role in tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/{{tenant_id}}/{{role_name}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"{{tenant_id}}",
+								"{{role_name}}"
+							]
+						},
+						"description": "Get all permissions for a role in tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove All Permissions for Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/{{tenant_id}}/{{role_name}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"{{tenant_id}}",
+								"{{role_name}}"
+							]
+						},
+						"description": "Remove all permissions for a role in tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roles with Permissions in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get all roles that have permissions in tenant"
+					},
+					"response": []
+				}
+			],
+			"description": "Tenant role permission management operations"
+		},
+		{
+			"name": "Test Workflow",
+			"item": [
+				{
+					"name": "1. Login as Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Step 1: Login as admin user to get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Debug Employee Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-employee-roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-employee-roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 2: Debug authorization to check if user can view employee roles"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Available Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/available-roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"available-roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 3: Get available roles for tenant (this was failing with 403)"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Employees in Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/employee-roles/tenant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"employee-roles",
+								"tenant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 4: Get all employees in tenant"
+					},
+					"response": []
+				}
+			],
+			"description": "Step-by-step test workflow for debugging employee roles"
+		},
+		{
+			"name": "Permission Grant/Deny Workflow",
+			"item": [
+				{
+					"name": "1. Get Initial Effective Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/permissions/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"permissions",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 1: Get current effective permissions (base + grants - denies)"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Grant Extra Permission to Staff",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"staff\",\n  \"permissionCodes\": [\"finance.billing.approve\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/grant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"grant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 2: Grant permission that base role doesn't have (extend)"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Check Staff Permissions After Grant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/{{tenant_id}}/staff",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"{{tenant_id}}",
+								"staff"
+							]
+						},
+						"description": "Step 3: Verify staff role now has granted=true for finance.billing.approve"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Effective Permissions After Grant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/permissions/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"permissions",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 4: Check if finance.billing.approve now appears in effective permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Revoke Permission from Staff",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"staff\",\n  \"permissionCodes\": [\"finance.billing.approve\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/revoke/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"revoke",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 5: Revoke the granted permission (DELETE record)"
+					},
+					"response": []
+				},
+				{
+					"name": "6. Verify Permission Removed",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/{{tenant_id}}/staff",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"{{tenant_id}}",
+								"staff"
+							]
+						},
+						"description": "Step 6: Verify staff role no longer has custom permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get All Roles with Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tenant-role-permissions/roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tenant-role-permissions",
+								"roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Step 7: Check which roles have custom permissions configured"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete workflow to test grant/revoke permissions for roles in tenant"
+		},
+		{
+			"name": "Debug Endpoints",
+			"item": [
+				{
+					"name": "Debug Employee Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-employee-roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-employee-roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Debug authorization for employee roles endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Available Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/test-available-roles/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"test-available-roles",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Test the available roles endpoint logic"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Tenant Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-tenant-permissions/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-tenant-permissions",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Debug tenant permissions - check current state"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug User Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-user-permissions/{{target_user_id}}/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-user-permissions",
+								"{{target_user_id}}",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Debug user permissions - test the same query used in login"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Permission Breakdown",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-permission-breakdown/{{target_user_id}}/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-permission-breakdown",
+								"{{target_user_id}}",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Debug permission breakdown - show global + tenant permissions separately"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug Grant Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"{{role_name}}\",\n  \"permissionCodes\": [\"iam.role.read\", \"iam.role.write\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/debug-grant-permission/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"debug-grant-permission",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Debug grant permission - test with detailed logging"
+					},
+					"response": []
+				}
+			],
+			"description": "Debug endpoints for troubleshooting authorization issues"
+		},
+		{
+			"name": "User Permission Overrides",
+			"item": [
+				{
+					"name": "Grant Permissions to User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"{{permission_to_grant}}\"],\n  \"expiresAt\": null,\n  \"reason\": \"Special permission for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grant/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grant",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Grant special permissions to a specific user (permanent or temporary)"
+					},
+					"response": []
+				},
+				{
+					"name": "Deny Permissions from User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"{{permission_to_deny}}\"],\n  \"expiresAt\": null,\n  \"reason\": \"Restrict this permission temporarily\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/deny/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"deny",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Deny permissions from a specific user (overrides role permissions)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Permission Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/summary/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Get complete summary of user permission overrides including grants, denies, counts, and effective permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Grants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grants/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grants",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Get only active grants for a user (not expired)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Denies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/denies/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"denies",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Get only active denies for a user (not expired)"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Grants",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"{{permission_to_grant}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/revoke-grants/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"revoke-grants",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Revoke previously granted permissions from user"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Denies",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"{{permission_to_deny}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/revoke-denies/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"revoke-denies",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Revoke previously denied permissions from user"
+					},
+					"response": []
+				},
+				{
+					"name": "Grant Temporary Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"finance.invoice.approve\"],\n  \"expiresAt\": \"2025-12-31T23:59:59Z\",\n  \"reason\": \"Temporary access until year end\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grant/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grant",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Grant temporary permission with expiration date"
+					},
+					"response": []
+				}
+			],
+			"description": "User-level permission overrides (grants and denies for individual users)"
+		},
+		{
+			"name": "User Permission Override Workflow",
+			"item": [
+				{
+					"name": "1. Get Initial User Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/summary/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 1: Check initial permission state before any grants or denies"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Grant Special Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"finance.billing.approve\", \"base.report.export\"],\n  \"expiresAt\": null,\n  \"reason\": \"Special approval rights for project manager\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grant/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grant",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 2: Grant special permissions to user"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Verify Granted Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grants/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grants",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 3: Check active grants"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Deny Dangerous Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"base.resident.delete\", \"iam.user.delete\"],\n  \"expiresAt\": null,\n  \"reason\": \"Prevent accidental deletions\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/deny/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"deny",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 4: Deny dangerous permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Verify Denied Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/denies/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"denies",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 5: Check active denies"
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Complete Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/summary/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 6: Get complete summary with grants, denies, and final effective permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "7. Grant Temporary Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"finance.invoice.approve\"],\n  \"expiresAt\": \"2025-12-31T23:59:59Z\",\n  \"reason\": \"Temporary approval access for Q4 closing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/grant/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"grant",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 7: Grant temporary permission with expiration"
+					},
+					"response": []
+				},
+				{
+					"name": "8. Verify Temporary Permission",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/summary/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 8: Check summary to see temporary permission with expiration date"
+					},
+					"response": []
+				},
+				{
+					"name": "9. Revoke Grants",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"finance.billing.approve\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/revoke-grants/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"revoke-grants",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 9: Revoke one of the granted permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "10. Revoke Denies",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"permissionCodes\": [\"base.resident.delete\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/revoke-denies/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"revoke-denies",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 10: Revoke one of the denied permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "11. Final Verification",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user-permissions/summary/{{tenant_id}}/{{target_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user-permissions",
+								"summary",
+								"{{tenant_id}}",
+								"{{target_user_id}}"
+							]
+						},
+						"description": "Step 11: Final check to verify all changes"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete workflow testing user permission overrides with grants, denies, temporary permissions, and revocations"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8088",
+			"type": "string"
+		}
+	]
+}
+
+

@@ -1,0 +1,290 @@
+server:
+  # Server performance optimization
+  max-http-header-size: 32768  # 32KB max header size (for ngrok headers)
+  max-http-request-header-size: 32768
+  # Netty server configuration
+  netty:
+    connection-timeout: 5000  # 5 seconds connection timeout
+    idle-timeout: 30s  # 30 seconds idle timeout
+    keep-alive: true
+    # Thread pool configuration
+    event-loop-group:
+      worker-threads: 0  # 0 = auto (use available processors)
+
+spring:
+  # Codec configuration for better performance
+  codec:
+    max-in-memory-size: 10MB  # Max buffer size for request/response body
+  cloud:
+    gateway:
+      routes:
+        # Services Card Service Routes (priority - match first)
+        - id: services-card-resident-card
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/resident-card/**
+          filters:
+            - StripPrefix=0
+        - id: services-card-elevator-card
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/elevator-card/**
+          filters:
+            - StripPrefix=0
+        - id: services-card-register-service
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/register-service/**
+          filters:
+            - StripPrefix=0
+        - id: services-card-registrations
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/card-registrations/**
+          filters:
+            - StripPrefix=0
+        - id: services-card-pricing
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/card-pricing/**
+          filters:
+            - StripPrefix=0
+        # Services Card Service - Uploads (must be before base-service catch-all)
+        - id: services-card-uploads
+          uri: ${services-card.service.url:http://localhost:8083}
+          predicates:
+            - Path=/api/uploads/**
+          filters:
+            - StripPrefix=1
+        # IAM Service Routes (must be before base-service catch-all)
+        - id: iam-service
+          uri: ${iam.service.url:http://localhost:8088}
+          predicates:
+            - Path=/api/iam/**
+          filters:
+            - RewritePath=/api/iam/(?<segment>.*), /api/$\{segment}  # Rewrite /api/iam/auth/login to /api/auth/login
+        # Notifications Service Routes (must be before base-service catch-all)
+        - id: notifications-service
+          uri: ${customer-interaction.service.url:http://localhost:8086}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=0
+        # News Service Routes (must be before base-service catch-all)
+        - id: news-service
+          uri: ${customer-interaction.service.url:http://localhost:8086}
+          predicates:
+            - Path=/api/news/**
+          filters:
+            - StripPrefix=0
+        # Asset Maintenance Service Routes (must be before base-service catch-all)
+        - id: asset-maintenance-service
+          uri: ${asset-maintenance.service.url:http://localhost:8084}
+          predicates:
+            - Path=/api/asset-maintenance/**
+          filters:
+            - StripPrefix=0
+        # Finance Billing Service Routes (must be before base-service catch-all)
+        - id: finance-billing-service
+          uri: ${finance-billing.service.url:http://localhost:8085}
+          predicates:
+            - Path=/api/invoices/**,/api/billing/**
+          filters:
+            - StripPrefix=0
+        # Data Docs Service Routes (must be before base-service catch-all)
+        - id: data-docs-service
+          uri: ${data-docs.service.url:http://localhost:8082}
+          predicates:
+            - Path=/api/data-docs/**
+          filters:
+            - StripPrefix=0
+        # Data Docs Service - Contracts (must be before base-service catch-all)
+        - id: data-docs-contracts
+          uri: ${data-docs.service.url:http://localhost:8082}
+          predicates:
+            - Path=/api/contracts/**
+          filters:
+            - StripPrefix=0
+        # Data Docs Service - Files (must be before base-service catch-all)
+        - id: data-docs-files
+          uri: ${data-docs.service.url:http://localhost:8082}
+          predicates:
+            - Path=/api/files/**
+          filters:
+            - StripPrefix=0
+        # Data Docs Service - ImageKit Uploads (must be before base-service catch-all)
+        - id: data-docs-imagekit
+          uri: ${data-docs.service.url:http://localhost:8082}
+          predicates:
+            - Path=/api/imagekit/**
+          filters:
+            - StripPrefix=0
+        # Data Docs Service - Videos (must be before base-service catch-all)
+        - id: data-docs-videos
+          uri: ${data-docs.service.url:http://localhost:8082}
+          predicates:
+            - Path=/api/videos/**
+          filters:
+            - StripPrefix=0
+        # Customer Interaction Service Routes (must be before base-service catch-all)
+        - id: customer-interaction-service
+          uri: ${customer-interaction.service.url:http://localhost:8086}
+          predicates:
+            - Path=/api/customer-interaction/**
+          filters:
+            - StripPrefix=0
+        # Marketplace Service - Uploads (must be before marketplace-service catch-all)
+        - id: marketplace-service-uploads
+          uri: ${marketplace.service.url:http://localhost:8089}
+          predicates:
+            - Path=/api/marketplace/uploads/**
+          filters:
+            - StripPrefix=2
+        # Marketplace Service Routes (must be before base-service catch-all)
+        - id: marketplace-service
+          uri: ${marketplace.service.url:http://localhost:8089}
+          predicates:
+            - Path=/api/marketplace/**
+          filters:
+            - StripPrefix=2
+        # Chat Service - Direct Invitations (must be before chat-service catch-all)
+        - id: chat-service-direct-invitations
+          uri: ${chat.service.url:http://localhost:8090}
+          predicates:
+            - Path=/api/direct-invitations/**
+          filters:
+            - StripPrefix=0
+        # Chat Service - Direct Chat (must be before chat-service catch-all)
+        - id: chat-service-direct-chat
+          uri: ${chat.service.url:http://localhost:8090}
+          predicates:
+            - Path=/api/direct-chat/**
+          filters:
+            - StripPrefix=0
+        # Chat Service Routes
+        - id: chat-service
+          uri: ${chat.service.url:http://localhost:8090}
+          predicates:
+            - Path=/api/chat/**
+          filters:
+            - StripPrefix=2
+        # Chat Service - Uploads (must be before base-service catch-all)
+        - id: chat-service-uploads
+          uri: ${chat.service.url:http://localhost:8090}
+          predicates:
+            - Path=/uploads/chat/**
+          filters:
+            - StripPrefix=0
+        # Staff Work Service Routes (must be before base-service catch-all)
+        - id: staff-work-service
+          uri: ${staff-work.service.url:http://localhost:8087}
+          predicates:
+            - Path=/api/staff-work/**
+          filters:
+            - StripPrefix=0
+        # WebSocket Routes (must be before base-service catch-all)
+        # DEV LOCAL mode: WebSocket proxy configuration
+        # Gateway proxies WebSocket connections to backend services
+        # IMPORTANT: Backend must return 101 Switching Protocols for WebSocket handshake
+        - id: websocket-customer-interaction
+          uri: ${customer-interaction.service.url:http://localhost:8086}
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
+          metadata:
+            # Disable retry for WebSocket connections
+            connect-timeout: 10000  # 10 seconds
+            response-timeout: 30000  # 30 seconds
+        # Health endpoint (must be before catch-all routes)
+        - id: health-service
+          uri: http://localhost:${server.port:8989}
+          predicates:
+            - Path=/api/health
+          filters:
+            - StripPrefix=0
+        # Root endpoint (must be before discovery)
+        - id: root-endpoint
+          uri: http://localhost:${server.port:8989}
+          predicates:
+            - Path=/
+          filters:
+            - StripPrefix=0
+        # Discovery endpoint (must be before catch-all routes)
+        - id: discovery-service
+          uri: http://localhost:${server.port:8989}
+          predicates:
+            - Path=/api/discovery/**
+          filters:
+            - StripPrefix=0
+        # Base Service Routes (catch-all for /api/** - must be last)
+        - id: base-service
+          uri: ${base.service.url:http://localhost:8081}
+          predicates:
+            - Path=/api/**
+          filters:
+            - StripPrefix=0
+      # HTTP Client Configuration for DEV LOCAL mode
+      # Clear timeouts, no retries, optimized for stability
+      httpclient:
+        # Connection timeout (time to establish connection to backend service)
+        connect-timeout: 10000  # 10 seconds
+        # Response timeout (time to wait for response from backend service)
+        # Increased for DEV LOCAL mode to handle slow microservices/database queries
+        response-timeout: 45s  # 45 seconds - allow more time for slow endpoints
+        # Disable retries to prevent overload
+        retry:
+          enabled: false  # No automatic retries
+        # Connection pool configuration
+        pool:
+          type: ELASTIC  # Use elastic connection pool for better performance
+          max-connections: 200  # Reduced from 500 to prevent overload
+          max-idle-time: 20s  # Max idle time before closing connection
+          max-life-time: 60s  # Max lifetime of connection
+          evict-in-background: 10s  # Evict idle connections in background
+        # Compression
+        compression: true
+        # Keep-alive
+        keep-alive: true
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "*"  # Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is true
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+######## Logging Configuration - PRODUCTION-READY FOR DEV LOCAL  #########
+# Only log WARN and ERROR to reduce I/O overhead and improve performance
+logging:
+  level:
+    root: WARN
+    # Disable verbose Spring Cloud Gateway logs
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web.reactive: WARN
+    # Disable Netty logs (connection pool, HTTP client)
+    reactor.netty: WARN
+    io.netty: WARN
+    # Disable Reactor logs - suppress WebSocket connection reset errors
+    reactor.core: WARN
+    # Suppress "default onErrorDropped" errors for WebSocket connections
+    reactor.core.publisher.Operators: ERROR
+    # Disable WebSocket logs
+    org.springframework.web.socket: WARN
+    org.springframework.messaging: WARN
+    # Disable HTTP client logs
+    org.springframework.web.client: WARN
+    # Disable connection pool logs
+    com.zaxxer.hikari: WARN
+    # Disable Spring Security logs
+    org.springframework.security: WARN
+    # Only log errors from our application
+    com.QhomeBase.apigateway: WARN
+

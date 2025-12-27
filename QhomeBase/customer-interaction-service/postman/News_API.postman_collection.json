@@ -1,0 +1,774 @@
+{
+	"info": {
+		"name": "Content Service API",
+		"description": "API endpoints for News and Notification management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8086",
+			"type": "string"
+		},
+		{
+			"key": "gatewayUrl",
+			"value": "http://localhost:8989",
+			"type": "string"
+		},
+		{
+			"key": "residentId",
+			"value": "660e8400-e29b-41d4-a716-446655440001",
+			"type": "string"
+		},
+		{
+			"key": "newsId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "imageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "buildingId",
+			"value": "770e8400-e29b-41d4-a716-446655440002",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+			"type": "string"
+		},
+		{
+			"key": "notificationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "110e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "1. Login (IAM Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('authToken', 'Bearer ' + token);",
+									"        pm.environment.set('authToken', 'Bearer ' + token);",
+									"        console.log('Token saved: Bearer ' + token.substring(0, 20) + '...');",
+									"        pm.test('Token saved successfully', function () {",
+									"            pm.expect(token).to.not.be.null;",
+									"        });",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin@test.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8088/api/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login to IAM service to get JWT token"
+					}
+				},
+				{
+					"name": "2. Generate Test Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    var token = jsonData.token || jsonData.accessToken;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('authToken', 'Bearer ' + token);",
+									"        pm.environment.set('authToken', 'Bearer ' + token);",
+									"        console.log('Token saved: Bearer ' + token.substring(0, 20) + '...');",
+									"        pm.test('Token saved successfully', function () {",
+									"            pm.expect(token).to.not.be.null;",
+									"        });",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"uid\": \"110e8400-e29b-41d4-a716-446655440000\",\n  \"username\": \"admin@test.com\",\n  \"roles\": [\"admin\"],\n  \"permissions\": [\n    \"content.news.create\",\n    \"content.news.update\",\n    \"content.news.delete\",\n    \"content.news.view\",\n    \"content.news.publish\",\n    \"content.news.image.upload\",\n    \"content.news.image.delete\",\n    \"content.news.image.update\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/test/generate-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "generate-token"]
+						},
+						"description": "Generate test JWT token for development (only available in dev/test environment)"
+					}
+				},
+				{
+					"name": "3. Verify Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/verify-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "verify-token"]
+						},
+						"description": "Verify if JWT token is valid and see its claims"
+					}
+				},
+				{
+					"name": "4. Public Endpoint (No Auth)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/public",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "test", "public"]
+						},
+						"description": "Test endpoint that doesn't require authentication"
+					}
+				}
+			]
+		},
+		{
+			"name": "News Management (Admin)",
+			"item": [
+				{
+					"name": "1. Create News - ALL Target",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('newsId', jsonData.id);",
+									"    pm.test('News created successfully', function () {",
+									"        pm.expect(jsonData.id).to.not.be.null;",
+									"        pm.expect(jsonData.status).to.eql('DRAFT');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Thông báo bảo trì hệ thống nước\",\n  \"summary\": \"Tòa nhà sẽ tạm ngưng cấp nước để bảo trì hệ thống\",\n  \"bodyHtml\": \"<h2>Thông báo bảo trì</h2><p>Kính gửi quý cư dân,</p><p>Ban quản lý xin thông báo về lịch bảo trì hệ thống cấp nước:</p><ul><li>Thời gian: 8:00 - 17:00 ngày 30/10/2025</li><li>Phạm vi: Toàn bộ tòa nhà</li></ul><p>Đề nghị quý cư dân chuẩn bị nước dự trữ.</p>\",\n  \"coverImageUrl\": \"http://localhost:8082/files/news/cover_maintenance.jpg\",\n  \"status\": \"DRAFT\",\n  \"publishAt\": \"2025-10-25T00:00:00Z\",\n  \"expireAt\": \"2025-10-31T23:59:59Z\",\n  \"displayOrder\": 1,\n  \"scope\": \"EXTERNAL\",\n  \"targetBuildingId\": null,\n  \"images\": [\n    {\n      \"url\": \"http://localhost:8082/files/news/detail_1.jpg\",\n      \"caption\": \"Khu vực bảo trì\",\n      \"sortOrder\": 0\n    },\n    {\n      \"url\": \"http://localhost:8082/files/news/detail_2.jpg\",\n      \"caption\": \"Lịch trình chi tiết\",\n      \"sortOrder\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news"]
+						}
+					}
+				},
+				{
+					"name": "2. Create News - Specific Buildings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Thông báo sửa thang máy tòa A\",\n  \"summary\": \"Thang máy số 1 và 2 tạm ngưng hoạt động\",\n  \"bodyHtml\": \"<p>Thang máy tòa A sẽ được bảo trì vào tuần tới.</p>\",\n  \"coverImageUrl\": \"http://localhost:8082/files/news/elevator.jpg\",\n  \"status\": \"PUBLISHED\",\n  \"publishAt\": \"2025-10-24T08:00:00Z\",\n  \"displayOrder\": 2,\n  \"scope\": \"EXTERNAL\",\n  \"targetBuildingId\": \"{{buildingId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news"]
+						}
+					}
+				},
+				{
+					"name": "3. Update News",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"[CẬP NHẬT] Thông báo bảo trì hệ thống nước\",\n  \"summary\": \"Thời gian bảo trì đã được thay đổi\",\n  \"bodyHtml\": \"<h2>Cập nhật lịch bảo trì</h2><p>Thời gian mới: 9:00 - 16:00</p>\",\n  \"status\": \"PUBLISHED\",\n  \"displayOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news/{{newsId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "{{newsId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Get All News (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/news",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news"]
+						}
+					}
+				},
+				{
+					"name": "5. Get News Detail (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/{{newsId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "{{newsId}}"]
+						}
+					}
+				},
+				{
+					"name": "6. Delete News (Archive)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/{{newsId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "{{newsId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "News for Residents",
+			"item": [
+				{
+					"name": "1. Get All News for Resident",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/resident?residentId={{residentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "resident"],
+							"query": [
+								{
+									"key": "residentId",
+									"value": "{{residentId}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Get News Detail for Resident",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/{{newsId}}/resident?residentId={{residentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "{{newsId}}", "resident"],
+							"query": [
+								{
+									"key": "residentId",
+									"value": "{{residentId}}"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "News Images",
+			"item": [
+				{
+					"name": "1. Upload Single Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('imageId', jsonData.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newsId\": \"{{newsId}}\",\n  \"url\": \"http://localhost:8082/files/news/image_new_1.jpg\",\n  \"caption\": \"Hình ảnh mô tả chi tiết\",\n  \"sortOrder\": 2,\n  \"fileSize\": 245678,\n  \"contentType\": \"image/jpeg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news/images",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "images"]
+						}
+					}
+				},
+				{
+					"name": "2. Upload Multiple Images",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  {\n    \"newsId\": \"{{newsId}}\",\n    \"url\": \"http://localhost:8082/files/news/batch_1.jpg\",\n    \"caption\": \"Ảnh 1\",\n    \"sortOrder\": 3,\n    \"fileSize\": 123456,\n    \"contentType\": \"image/jpeg\"\n  },\n  {\n    \"newsId\": \"{{newsId}}\",\n    \"url\": \"http://localhost:8082/files/news/batch_2.jpg\",\n    \"caption\": \"Ảnh 2\",\n    \"sortOrder\": 4,\n    \"fileSize\": 234567,\n    \"contentType\": \"image/jpeg\"\n  },\n  {\n    \"newsId\": \"{{newsId}}\",\n    \"url\": \"http://localhost:8082/files/news/batch_3.jpg\",\n    \"caption\": \"Ảnh 3\",\n    \"sortOrder\": 5,\n    \"fileSize\": 345678,\n    \"contentType\": \"image/jpeg\"\n  }\n]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news/images/batch",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "images", "batch"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Images by News ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/{{newsId}}/images",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "{{newsId}}", "images"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Image Caption",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"caption\": \"Caption đã được cập nhật\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news/images/{{imageId}}/caption",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "images", "{{imageId}}", "caption"]
+						}
+					}
+				},
+				{
+					"name": "5. Update Image Sort Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sortOrder\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/news/images/{{imageId}}/sort-order",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "images", "{{imageId}}", "sort-order"]
+						}
+					}
+				},
+				{
+					"name": "6. Delete Image",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/news/images/{{imageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "news", "images", "{{imageId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Notification Management (Admin/Staff)",
+			"item": [
+				{
+					"name": "1. Create Notification - EXTERNAL (For Residents)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('notificationId', jsonData.id);",
+									"    pm.test('Notification created successfully', function () {",
+									"        pm.expect(jsonData.id).to.not.be.null;",
+									"        pm.expect(jsonData.scope).to.eql('EXTERNAL');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"SYSTEM\",\n  \"title\": \"Thông báo bảo trì hệ thống\",\n  \"message\": \"Tòa nhà sẽ tạm ngưng cấp nước từ 8:00 - 17:00 ngày 30/10 để bảo trì\",\n  \"scope\": \"EXTERNAL\",\n  \"targetBuildingId\": \"{{buildingId}}\",\n  \"actionUrl\": \"/news/123\",\n  \"iconUrl\": \"http://localhost:8082/icons/maintenance.png\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						},
+						"description": "Create EXTERNAL notification for residents in a building"
+					}
+				},
+				{
+					"name": "2. Create Notification - INTERNAL (For Staff)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"SYSTEM\",\n  \"title\": \"Cuộc họp tuần\",\n  \"message\": \"Cuộc họp ban quản lý vào lúc 14:00 ngày 28/10\",\n  \"scope\": \"INTERNAL\",\n  \"targetRole\": \"admin\",\n  \"actionUrl\": \"/meetings/456\",\n  \"iconUrl\": \"http://localhost:8082/icons/meeting.png\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						},
+						"description": "Create INTERNAL notification for staff with specific role"
+					}
+				},
+				{
+					"name": "3. Create Notification - EXTERNAL (All Buildings)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"NEWS\",\n  \"title\": \"Thông báo chung\",\n  \"message\": \"Có tin tức mới được đăng\",\n  \"scope\": \"EXTERNAL\",\n  \"targetBuildingId\": null,\n  \"referenceId\": \"{{newsId}}\",\n  \"referenceType\": \"NEWS\",\n  \"actionUrl\": \"/news/{{newsId}}\",\n  \"iconUrl\": \"http://localhost:8082/icons/news.png\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						},
+						"description": "Create EXTERNAL notification for all buildings (targetBuildingId = null)"
+					}
+				},
+				{
+					"name": "4. Update Notification",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"[CẬP NHẬT] Thông báo bảo trì hệ thống\",\n  \"message\": \"Thời gian bảo trì đã thay đổi: 9:00 - 16:00\",\n  \"actionUrl\": \"/news/123-updated\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "{{notificationId}}"]
+						},
+						"description": "Update notification details"
+					}
+				},
+				{
+					"name": "5. Get All Notifications (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"]
+						},
+						"description": "Get all notifications (requires admin permission)"
+					}
+				},
+				{
+					"name": "6. Get Notification By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "{{notificationId}}"]
+						},
+						"description": "Get notification details by ID"
+					}
+				},
+				{
+					"name": "7. Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "{{notificationId}}"]
+						},
+						"description": "Delete notification"
+					}
+				},
+				{
+					"name": "8. Get Notifications for Role (Staff/Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/role?role=admin&userId={{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "role"],
+							"query": [
+								{
+									"key": "role",
+									"value": "admin"
+								},
+								{
+									"key": "userId",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Get INTERNAL notifications for a specific role"
+					}
+				}
+			]
+		},
+		{
+			"name": "Notifications for Residents (Mobile App)",
+			"item": [
+				{
+					"name": "1. Get All Notifications for Resident",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/resident?residentId={{residentId}}&buildingId={{buildingId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "resident"],
+							"query": [
+								{
+									"key": "residentId",
+									"value": "{{residentId}}"
+								},
+								{
+									"key": "buildingId",
+									"value": "{{buildingId}}"
+								}
+							]
+						},
+						"description": "Get all notifications for a resident"
+					}
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["actuator", "health"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

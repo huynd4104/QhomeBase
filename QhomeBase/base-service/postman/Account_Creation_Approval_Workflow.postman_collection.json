@@ -1,0 +1,677 @@
+{
+	"info": {
+		"name": "Account Creation Approval Workflow",
+		"description": "Complete workflow for account creation with approval: Resident creates request → Admin approves → Account created",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseServiceUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "iamServiceUrl",
+			"value": "http://localhost:8088",
+			"type": "string"
+		},
+		{
+			"key": "residentToken",
+			"value": "Bearer ",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "Bearer ",
+			"type": "string"
+		},
+		{
+			"key": "residentUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminUserId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "unitId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "residentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accountRequestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "householdId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberRequestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberFullName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberPhone",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberEmail",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberNationalId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "memberDob",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Login as Resident (Chủ hộ)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    ",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('residentToken', 'Bearer ' + token);",
+									"        pm.environment.set('residentToken', 'Bearer ' + token);",
+									"        console.log('✅ Resident token saved');",
+									"    }",
+									"    ",
+									"    var userId = jsonData.userId || jsonData.id;",
+									"    if (userId) {",
+									"        pm.collectionVariables.set('residentUserId', userId);",
+									"        pm.environment.set('residentUserId', userId);",
+									"        console.log('✅ Resident User ID saved: ' + userId);",
+									"    }",
+									"} else {",
+									"    console.log('❌ Login failed: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iamServiceUrl}}/api/auth/login",
+							"host": ["{{iamServiceUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as a resident (chủ hộ) to get authentication token"
+					}
+				},
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    ",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('adminToken', 'Bearer ' + token);",
+									"        pm.environment.set('adminToken', 'Bearer ' + token);",
+									"        console.log('✅ Admin token saved');",
+									"    }",
+									"    ",
+									"    var userId = jsonData.userId || jsonData.id;",
+									"    if (userId) {",
+									"        pm.collectionVariables.set('adminUserId', userId);",
+									"        pm.environment.set('adminUserId', userId);",
+									"        console.log('✅ Admin User ID saved: ' + userId);",
+									"    }",
+									"} else {",
+									"    console.log('❌ Login failed: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{adminUsername}}\",\n    \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iamServiceUrl}}/api/auth/login",
+							"host": ["{{iamServiceUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as admin to get authentication token"
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Resident - View Residents Without Account",
+			"item": [
+				{
+					"name": "Get Residents Without Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.length > 0) {",
+									"        var firstResident = jsonData[0];",
+									"        pm.collectionVariables.set('residentId', firstResident.id);",
+									"        pm.environment.set('residentId', firstResident.id);",
+									"        console.log('✅ First resident ID saved: ' + firstResident.id);",
+									"        console.log('Resident name: ' + firstResident.fullName);",
+									"    }",
+									"} else {",
+									"    console.log('⚠️ No residents without account found');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/residents/units/{{unitId}}/household/members/without-account",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "residents", "units", "{{unitId}}", "household", "members", "without-account"]
+						},
+						"description": "Get list of residents in household that don't have an account yet"
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Resident - Create Account Request",
+			"item": [
+				{
+					"name": "Create Account Request (Auto Generate)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.id) {",
+									"        pm.collectionVariables.set('accountRequestId', jsonData.id);",
+									"        pm.environment.set('accountRequestId', jsonData.id);",
+									"        console.log('✅ Account request ID saved: ' + jsonData.id);",
+									"        console.log('Request status: ' + jsonData.status);",
+									"    }",
+									"} else {",
+									"    console.log('❌ Failed to create request: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"residentId\": \"{{residentId}}\",\n    \"autoGenerate\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/residents/create-account-request",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "residents", "create-account-request"]
+						},
+						"description": "Create account request with auto-generated username and password"
+					}
+				},
+				{
+					"name": "Create Account Request (Manual)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"residentId\": \"{{residentId}}\",\n    \"username\": \"testuser123\",\n    \"password\": \"Password123!\",\n    \"autoGenerate\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/residents/create-account-request",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "residents", "create-account-request"]
+						},
+						"description": "Create account request with manual username and password"
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Resident - View My Requests",
+			"item": [
+				{
+					"name": "Get My Account Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/residents/my-account-requests",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "residents", "my-account-requests"]
+						},
+						"description": "Get all account requests created by the logged-in resident"
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Admin - View Pending Requests",
+			"item": [
+				{
+					"name": "Get Pending Account Requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.length > 0) {",
+									"        var firstRequest = jsonData[0];",
+									"        if (!pm.collectionVariables.get('accountRequestId')) {",
+									"            pm.collectionVariables.set('accountRequestId', firstRequest.id);",
+									"            pm.environment.set('accountRequestId', firstRequest.id);",
+									"            console.log('✅ Account request ID saved: ' + firstRequest.id);",
+									"        }",
+									"        console.log('Found ' + jsonData.length + ' pending requests');",
+									"    } else {",
+									"        console.log('⚠️ No pending requests found');",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/admin/account-requests/pending",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "admin", "account-requests", "pending"]
+						},
+						"description": "Get all pending account creation requests (Admin only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Admin - Approve/Reject Request",
+			"item": [
+				{
+					"name": "Approve Account Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('✅ Account request approved!');",
+									"    console.log('Status: ' + jsonData.status);",
+									"    if (jsonData.status === 'APPROVED') {",
+									"        console.log('Account should be created automatically');",
+									"    }",
+									"} else {",
+									"    console.log('❌ Failed to approve: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/admin/account-requests/{{accountRequestId}}/approve",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "admin", "account-requests", "{{accountRequestId}}", "approve"]
+						},
+						"description": "Approve an account creation request (Admin only). This will automatically create the account."
+					}
+				},
+				{
+					"name": "Reject Account Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": false,\n    \"rejectionReason\": \"Thông tin không đầy đủ\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/admin/account-requests/{{accountRequestId}}/approve",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "admin", "account-requests", "{{accountRequestId}}", "approve"]
+						},
+						"description": "Reject an account creation request (Admin only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Resident - View Account Info",
+			"item": [
+				{
+					"name": "Get Resident Account Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/residents/{{residentId}}/account",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "residents", "{{residentId}}", "account"]
+						},
+						"description": "Get account information for a resident (after approval)"
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Household Member Request Workflow",
+			"item": [
+				{
+					"name": "Resident - Create Household Member Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.id) {",
+									"        pm.collectionVariables.set('memberRequestId', jsonData.id);",
+									"        pm.environment.set('memberRequestId', jsonData.id);",
+									"        console.log('✅ Household member request ID saved: ' + jsonData.id);",
+									"    }",
+									"} else {",
+									"    console.log('❌ Failed to create household member request: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"householdId\": \"{{householdId}}\",\n    \"residentFullName\": \"{{memberFullName}}\",\n    \"residentPhone\": \"{{memberPhone}}\",\n    \"residentEmail\": \"{{memberEmail}}\",\n    \"residentNationalId\": \"{{memberNationalId}}\",\n    \"residentDob\": \"{{memberDob}}\",\n    \"relation\": \"Quan hệ\",\n    \"proofOfRelationImageUrl\": null,\n    \"note\": \"Đăng ký cư trú\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/household-member-requests",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "household-member-requests"]
+						},
+						"description": "Primary resident submits a household member request"
+					}
+				},
+				{
+					"name": "Resident - View My Household Member Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{residentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/household-member-requests/my",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "household-member-requests", "my"]
+						},
+						"description": "Resident views all membership requests they have created"
+					}
+				},
+				{
+					"name": "Admin - View Pending Household Member Requests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.length > 0) {",
+									"        var firstRequest = jsonData[0];",
+									"        if (!pm.collectionVariables.get('memberRequestId')) {",
+									"            pm.collectionVariables.set('memberRequestId', firstRequest.id);",
+									"        }",
+									"        pm.environment.set('memberRequestId', firstRequest.id);",
+									"        console.log('✅ Pending household member request ID saved: ' + firstRequest.id);",
+									"    } else {",
+									"        console.log('⚠️ No pending household member requests found');",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/household-member-requests/pending",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "household-member-requests", "pending"]
+						},
+						"description": "Admin fetches the list of pending household member requests"
+					}
+				},
+				{
+					"name": "Admin - Approve Household Member Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('✅ Household member request approved');",
+									"    if (jsonData) {",
+									"        if (jsonData.residentId) {",
+									"            pm.collectionVariables.set('residentId', jsonData.residentId);",
+									"            pm.environment.set('residentId', jsonData.residentId);",
+									"            console.log('   Resident ID saved: ' + jsonData.residentId);",
+									"        }",
+									"        if (jsonData.unitId && !pm.collectionVariables.get('unitId')) {",
+									"            pm.collectionVariables.set('unitId', jsonData.unitId);",
+									"            pm.environment.set('unitId', jsonData.unitId);",
+									"            console.log('   Unit ID inferred: ' + jsonData.unitId);",
+									"        }",
+									"    }",
+									"} else {",
+									"    console.log('❌ Failed to approve household member request: ' + pm.response.text());",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/household-member-requests/{{memberRequestId}}/decision",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "household-member-requests", "{{memberRequestId}}", "decision"]
+						},
+						"description": "Admin approves the household member request"
+					}
+				},
+				{
+					"name": "Admin - Reject Household Member Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": false,\n    \"rejectionReason\": \"Không đủ giấy tờ chứng minh\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/household-member-requests/{{memberRequestId}}/decision",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "household-member-requests", "{{memberRequestId}}", "decision"]
+						},
+						"description": "Admin rejects the household member request"
+					}
+				}
+			]
+		}
+	]
+}
+
+
+
+
+

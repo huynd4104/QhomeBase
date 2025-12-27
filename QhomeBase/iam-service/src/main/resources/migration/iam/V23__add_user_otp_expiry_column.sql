@@ -1,0 +1,4 @@
+ALTER TABLE iam.users
+    ADD COLUMN IF NOT EXISTS otp_expiry TIMESTAMP;
+
+

@@ -1,0 +1,575 @@
+{
+	"info": {
+		"_postman_id": "unit-creation-api-collection",
+		"name": "Unit Creation API",
+		"description": "Collection để test chức năng tạo căn hộ (Unit) trong hệ thống QhomeBase",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Generate Test Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"console.log('Response status:', pm.response.code);",
+							"console.log('Response body:', pm.response.text());",
+							"",
+							"if (pm.response.code === 200) {",
+							"    try {",
+							"        const response = pm.response.json();",
+							"        console.log('Parsed response:', response);",
+							"        ",
+							"        if (response.token) {",
+							"            pm.environment.set('jwt_token', response.token);",
+							"            console.log('✅ Token saved successfully!');",
+							"            console.log('Token (first 50 chars):', response.token.substring(0, 50) + '...');",
+							"            console.log('Token length:', response.token.length);",
+							"            ",
+							"            pm.test('Token generated successfully', function () {",
+							"                pm.expect(response.token).to.not.be.undefined;",
+							"                pm.expect(response.token).to.be.a('string');",
+							"                pm.expect(response.token.length).to.be.greaterThan(10);",
+							"            });",
+							"        } else {",
+							"            console.log('❌ No token in response');",
+							"            pm.test('Token exists in response', function () {",
+							"                pm.expect(response.token).to.not.be.undefined;",
+							"            });",
+							"        }",
+							"    } catch (error) {",
+							"        console.log('❌ Error parsing response:', error);",
+							"        pm.test('Response is valid JSON', function () {",
+							"            pm.expect(pm.response.text()).to.be.a('string');",
+							"        });",
+							"    }",
+							"} else {",
+							"    console.log('❌ Failed to generate token. Status:', pm.response.code);",
+							"    console.log('Response:', pm.response.text());",
+							"    pm.test('Token generation successful', function () {",
+							"        pm.expect(pm.response.code).to.eql(200);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"uid\": \"{{user_id}}\",\n    \"username\": \"{{username}}\",\n    \"tenantId\": \"{{tenant_id}}\",\n    \"roles\": [\"tenant_manager\"],\n    \"permissions\": [\"base.unit.create\"]\n}"
+				},
+				"url": {
+					"raw": "{{iam_service_url}}/api/test/generate-token",
+					"host": [
+						"{{iam_service_url}}"
+					],
+					"path": [
+						"api",
+						"test",
+						"generate-token"
+					]
+				},
+				"description": "Tạo JWT token để test các API cần authentication"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Create Unit - Basic (Tầng 1)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    pm.environment.set('unit_id', response.id);",
+							"    console.log('Unit created:', response.id);",
+							"    console.log('Unit code:', response.code);",
+							"    ",
+							"    pm.test('Status is ACTIVE', function () {",
+							"        pm.expect(response.status).to.eql('ACTIVE');",
+							"    });",
+							"    pm.test('Tenant ID matches', function () {",
+							"        pm.expect(response.tenantId).to.eql(pm.environment.get('tenant_id'));",
+							"    });",
+							"    pm.test('Building ID matches', function () {",
+							"        pm.expect(response.buildingId).to.eql(pm.environment.get('building_id'));",
+							"    });",
+							"    pm.test('Code is generated correctly', function () {",
+							"        pm.expect(response.code).to.match(/^A1\\d{2}$/); // A101, A102, A103...",
+							"    });",
+							"    pm.test('Floor is 1', function () {",
+							"        pm.expect(response.floor).to.eql(1);",
+							"    });",
+							"    pm.test('Area matches', function () {",
+							"        pm.expect(response.areaM2).to.eql(50.5);",
+							"    });",
+							"    pm.test('Bedrooms matches', function () {",
+							"        pm.expect(response.bedrooms).to.eql(2);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 1,\n    \"areaM2\": 50.5,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Tạo căn hộ cơ bản ở tầng 1 - code sẽ được generate tự động (A101)"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Create Unit - Tầng 1 (Phòng thứ 2)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    console.log('Unit code:', response.code);",
+							"    ",
+							"    pm.test('Code is A102', function () {",
+							"        pm.expect(response.code).to.eql('A102');",
+							"    });",
+							"    pm.test('Floor is 1', function () {",
+							"        pm.expect(response.floor).to.eql(1);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 1,\n    \"areaM2\": 45.0,\n    \"bedrooms\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Tạo căn hộ thứ 2 ở tầng 1 - code sẽ là A102"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Create Unit - Tầng 2 (Phòng đầu tiên)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    console.log('Unit code:', response.code);",
+							"    ",
+							"    pm.test('Code is A201', function () {",
+							"        pm.expect(response.code).to.eql('A201');",
+							"    });",
+							"    pm.test('Floor is 2', function () {",
+							"        pm.expect(response.floor).to.eql(2);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 2,\n    \"areaM2\": 65.0,\n    \"bedrooms\": 3\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Tạo căn hộ đầu tiên ở tầng 2 - code sẽ là A201"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Create Unit - Tầng 2 (Phòng thứ 2)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    const response = pm.response.json();",
+							"    console.log('Unit code:', response.code);",
+							"    ",
+							"    pm.test('Code is A202', function () {",
+							"        pm.expect(response.code).to.eql('A202');",
+							"    });",
+							"    pm.test('Floor is 2', function () {",
+							"        pm.expect(response.floor).to.eql(2);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 2,\n    \"areaM2\": 70.0,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Tạo căn hộ thứ 2 ở tầng 2 - code sẽ là A202"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Test Validation - Missing Tenant ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return 400 Bad Request', function () {",
+							"    pm.expect(pm.response.code).to.eql(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 3,\n    \"areaM2\": 75.0,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Test thiếu tenant ID (should fail validation)"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Test Validation - Invalid Floor (Negative)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return 400 Bad Request', function () {",
+							"    pm.expect(pm.response.code).to.eql(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": -1,\n    \"areaM2\": 60.0,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Test floor âm (should fail validation)"
+			},
+			"response": []
+		},
+		{
+			"name": "8. Test Validation - Invalid Area (Zero)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return 400 Bad Request', function () {",
+							"    pm.expect(pm.response.code).to.eql(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 3,\n    \"areaM2\": 0,\n    \"bedrooms\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Test diện tích = 0 (should fail validation)"
+			},
+			"response": []
+		},
+		{
+			"name": "9. Test Error - Non-existent Building",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return 400 Bad Request', function () {",
+							"    pm.expect(pm.response.code).to.eql(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{invalid_building_id}}\",\n    \"floor\": 4,\n    \"areaM2\": 55.0,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Test với building ID không tồn tại (should fail)"
+			},
+			"response": []
+		},
+		{
+			"name": "10. Test Error - Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Should return 401 Unauthorized', function () {",
+							"    pm.expect(pm.response.code).to.eql(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 5,\n    \"areaM2\": 70.0,\n    \"bedrooms\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_service_url}}/api/units",
+					"host": [
+						"{{base_service_url}}"
+					],
+					"path": [
+						"api",
+						"units"
+					]
+				},
+				"description": "Test không có JWT token (should fail authentication)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default values if not already set",
+					"if (!pm.environment.get('user_id')) {",
+					"    pm.environment.set('user_id', '550e8400-e29b-41d4-a716-446655440000');",
+					"}",
+					"if (!pm.environment.get('tenant_id')) {",
+					"    pm.environment.set('tenant_id', '550e8400-e29b-41d4-a716-446655440001');",
+					"}",
+					"if (!pm.environment.get('building_id')) {",
+					"    pm.environment.set('building_id', '550e8400-e29b-41d4-a716-446655440003');",
+					"}",
+					"if (!pm.environment.get('invalid_building_id')) {",
+					"    pm.environment.set('invalid_building_id', '550e8400-e29b-41d4-a716-446655440999');",
+					"}",
+					"if (!pm.environment.get('username')) {",
+					"    pm.environment.set('username', 'testuser');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_service_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "iam_service_url",
+			"value": "http://localhost:8088",
+			"type": "string"
+		}
+	]
+}

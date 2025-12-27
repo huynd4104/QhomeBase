@@ -1,0 +1,1459 @@
+{
+  "info": {
+    "_postman_id": "8c0d2f43-0a0a-4fd8-9f25-6e4f5055a1f0",
+    "name": "QHome Card Registration Admin",
+    "description": "Collection for testing vehicle, elevator card, and resident card registration services.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Login helpers to fetch IAM tokens for admin and resident flows.",
+      "item": [
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{iamServiceUrl}}/api/auth/login",
+              "host": [
+                "{{iamServiceUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin login succeeded\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (!json || !json.accessToken) {",
+                  "    throw new Error(\"accessToken not present in login response\");",
+                  "}",
+                  "pm.environment.set(\"admin_token\", json.accessToken);",
+                  "pm.environment.set(\"adminToken\", json.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Resident",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{residentUsername}}\",\n  \"password\": \"{{residentPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{iamServiceUrl}}/api/auth/login",
+              "host": [
+                "{{iamServiceUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Resident login succeeded\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (!json || !json.accessToken) {",
+                  "    throw new Error(\"accessToken not present in login response\");",
+                  "}",
+                  "pm.environment.set(\"resident_token\", json.accessToken);",
+                  "pm.environment.set(\"residentToken\", json.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vehicle Registration",
+      "description": "Resident and Admin APIs for vehicle registrations.",
+      "item": [
+        {
+          "name": "Upload Images",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": [],
+                  "description": "Danh sách file ảnh (tối đa 10MB mỗi file). Có thể upload nhiều file cùng lúc."
+                }
+              ]
+            },
+            "description": "Upload ảnh cho đăng ký xe (giấy tờ xe, biển số, v.v.).\n\n**Yêu cầu:**\n- File size tối đa: 10MB mỗi file\n- Format: JPG, PNG, JPEG\n- Có thể upload nhiều file cùng lúc\n\n**Response:**\n- Trả về mảng `imageUrls` để sử dụng trong request tạo đăng ký\n\n**Lưu ý:**\n- Upload ảnh trước, sau đó dùng `imageUrls` trong request tạo đăng ký",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/upload-images",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "upload-images"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vehicle Registration & Payment URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// After creating registration, status = READY_FOR_PAYMENT, paymentStatus = UNPAID",
+                  "// After calling vnpay-url, status = PAYMENT_PENDING, paymentStatus = PAYMENT_APPROVAL",
+                  "pm.test(\"Payment URL created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json && json.registrationId) {",
+                  "    pm.environment.set(\"vehicleRegistrationId\", json.registrationId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"VEHICLE_REGISTRATION\",\n  \"requestType\": \"NEW_CARD\",\n  \"unitId\": \"{{unitId}}\",\n  \"vehicleType\": \"MOTORBIKE\",\n  \"licensePlate\": \"30A1-12345\",\n  \"vehicleBrand\": \"Honda\",\n  \"vehicleColor\": \"Đỏ\",\n  \"apartmentNumber\": \"A-12-05\",\n  \"buildingName\": \"Block A\",\n  \"note\": \"Đăng ký thẻ xe mới\",\n  \"imageUrls\": [\n    \"https://example.com/image1.jpg\",\n    \"https://example.com/image2.jpg\"\n  ]\n}"
+            },
+            "description": "Tạo đăng ký xe mới và lấy URL thanh toán VNPay.\n\n**Request Body:**\n- `serviceType`: `VEHICLE_REGISTRATION` (bắt buộc)\n- `requestType`: `NEW_CARD` (mới) hoặc `RENEWAL` (gia hạn)\n- `unitId`: UUID của căn hộ\n- `vehicleType`: `CAR`, `MOTORBIKE`, `BICYCLE`, `OTHER`\n- `licensePlate`: Biển số xe\n- `vehicleBrand`: Hãng xe\n- `vehicleColor`: Màu xe\n- `apartmentNumber`: Số căn hộ\n- `buildingName`: Tên tòa nhà\n- `imageUrls`: Mảng URL ảnh (từ API Upload Images)\n\n**Flow trạng thái:**\n1. Sau khi tạo: `status = READY_FOR_PAYMENT`, `paymentStatus = UNPAID`\n2. Sau khi gọi API này: `status = PAYMENT_PENDING`, `paymentStatus = PAYMENT_APPROVAL`\n3. Sau khi thanh toán thành công (VNPay callback): `paymentStatus = PAID`, `status = PENDING` (chờ admin duyệt)\n\n**Response:**\n- `registrationId`: UUID của đăng ký\n- `paymentUrl`: URL thanh toán VNPay",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/vnpay-url",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "vnpay-url"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Registration (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Lấy thông tin chi tiết đăng ký xe của resident.\n\n**Trạng thái có thể:**\n- `READY_FOR_PAYMENT` + `UNPAID`: Chưa thanh toán\n- `PAYMENT_PENDING` + `PAYMENT_APPROVAL`: Đang thanh toán\n- `PENDING` + `PAID`: Đã thanh toán, chờ admin duyệt\n- `APPROVED` + `PAID`: Đã được phê duyệt",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/{{vehicleRegistrationId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "{{vehicleRegistrationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resume Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Tiếp tục thanh toán cho đăng ký đã tạo nhưng chưa hoàn tất.\n\n**⚠️ KHI NÀO DÙNG API NÀY:**\n- Đăng ký có `paymentStatus = PAYMENT_APPROVAL` (đang chờ thanh toán VNPay) → Muốn lấy URL thanh toán mới\n- Đăng ký có `paymentStatus = UNPAID` (chưa thanh toán) → Muốn lấy URL thanh toán\n- Đăng ký có `status = PAYMENT_PENDING` → Muốn tiếp tục thanh toán\n\n**Điều kiện:**\n- `status = READY_FOR_PAYMENT` hoặc `PAYMENT_PENDING`\n- `paymentStatus = UNPAID` hoặc `PAYMENT_APPROVAL` hoặc `PAYMENT_PENDING`\n\n**Khác biệt với \"Update & Pay\":**\n- API này **KHÔNG** cập nhật thông tin đăng ký\n- API này **CHỈ** tạo URL thanh toán mới\n- Có thể dùng với `paymentStatus = PAYMENT_APPROVAL` (không như \"Update & Pay\")\n\n**Sau khi gọi:**\n- `status = PAYMENT_PENDING`\n- `paymentStatus = PAYMENT_APPROVAL`\n- Trả về URL thanh toán VNPay mới\n\n**Ví dụ sử dụng:**\n- User đã bấm thanh toán nhưng chưa hoàn tất trên VNPay (timeout, đóng tab, v.v.)\n- User muốn lấy lại URL thanh toán để tiếp tục",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/{{vehicleRegistrationId}}/resume-payment",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "{{vehicleRegistrationId}}",
+                "resume-payment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Payment URL (Update & Pay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleType\": \"MOTORBIKE\",\n  \"licensePlate\": \"30A1-12345\",\n  \"vehicleBrand\": \"Honda\",\n  \"vehicleColor\": \"Đỏ\",\n  \"note\": \"Cập nhật thông tin xe\"\n}"
+            },
+            "description": "Cập nhật thông tin đăng ký và lấy URL thanh toán.\n\n**⚠️ QUAN TRỌNG - Điều kiện bắt buộc:**\n- **CHỈ** cập nhật được khi `paymentStatus = UNPAID` (chưa thanh toán)\n- **KHÔNG THỂ** cập nhật nếu:\n  - `paymentStatus = PAID` (đã thanh toán) → Lỗi: \"Đăng ký đã thanh toán, không thể chỉnh sửa\"\n  - `paymentStatus = PAYMENT_APPROVAL` (đang chờ thanh toán) → Lỗi: \"Đăng ký đã thanh toán, không thể chỉnh sửa\"\n\n**⚠️ LƯU Ý QUAN TRỌNG:**\n- Nếu đăng ký có `paymentStatus = PAYMENT_APPROVAL` (đang chờ thanh toán VNPay):\n  - **KHÔNG** dùng API này để cập nhật thông tin\n  - **DÙNG** API \"Resume Payment\" để lấy URL thanh toán mới (không cập nhật thông tin)\n  - Hoặc gọi API này với **body rỗng** (không gửi body) để chỉ lấy URL thanh toán mới\n\n**Khi nào dùng API này:**\n- Đã tạo đăng ký nhưng chưa thanh toán (`READY_FOR_PAYMENT` + `UNPAID`)\n- Muốn **VỪA sửa thông tin xe VỪA** lấy URL thanh toán\n- Muốn tạo lại URL thanh toán sau khi cập nhật thông tin\n\n**Request Body:**\n- **Có thể gửi body rỗng** `{}` để chỉ lấy URL thanh toán (không cập nhật thông tin)\n- **Hoặc gửi các field cần cập nhật:**\n  - `vehicleType`: `CAR`, `MOTORBIKE`, `BICYCLE`, `OTHER`\n  - `licensePlate`: Biển số xe\n  - `vehicleBrand`: Hãng xe\n  - `vehicleColor`: Màu xe\n  - `note`: Ghi chú\n\n**Flow:**\n1. Nếu có body: Kiểm tra `paymentStatus = UNPAID` (nếu không → lỗi 400)\n2. Nếu có body: Cập nhật thông tin đăng ký\n3. Nếu có body: Reset `status = READY_FOR_PAYMENT`\n4. Tạo URL thanh toán: `status = PAYMENT_PENDING`, `paymentStatus = PAYMENT_APPROVAL`\n\n**Response:**\n- `registrationId`: UUID của đăng ký\n- `paymentUrl`: URL thanh toán VNPay mới\n\n**Lỗi có thể gặp:**\n- `400 Bad Request`: \"Đăng ký đã thanh toán, không thể chỉnh sửa\"\n  - **Nguyên nhân:** Gửi body với đăng ký có `paymentStatus != UNPAID`\n  - **Giải pháp:** Dùng API \"Resume Payment\" hoặc gửi body rỗng `{}`",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/{{vehicleRegistrationId}}/vnpay-url",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "{{vehicleRegistrationId}}",
+                "vnpay-url"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Vehicle Registration",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Hủy đăng ký xe.\n\n**Sau khi hủy:**\n- `status = CANCELLED`\n\n**Lưu ý:**\n- Chỉ hủy được khi chưa được admin approve\n- Nếu đã thanh toán, cần xử lý hoàn tiền riêng",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/{{vehicleRegistrationId}}/cancel",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "{{vehicleRegistrationId}}",
+                "cancel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Vehicle Registrations (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Lấy danh sách đăng ký xe cho admin.\n\n**Query Parameters:**\n- `status`: PENDING, READY_FOR_PAYMENT, PAYMENT_PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED\n  - Nếu `status=PENDING`, sẽ bao gồm cả READY_FOR_PAYMENT và PAYMENT_PENDING\n- `paymentStatus`: UNPAID, PAYMENT_APPROVAL, PAYMENT_PENDING, PAID\n\n**Flow trạng thái:**\n- `READY_FOR_PAYMENT` + `UNPAID`: Đã tạo, chưa thanh toán\n- `PAYMENT_PENDING` + `PAYMENT_APPROVAL`: Đang trong quá trình thanh toán\n- `PENDING` + `PAID`: Đã thanh toán, chờ admin duyệt\n- `APPROVED` + `PAID`: Đã được admin phê duyệt",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/admin/vehicle-registrations",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "admin",
+                "vehicle-registrations"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "PENDING, READY_FOR_PAYMENT, PAYMENT_PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED. Để trống để lấy tất cả.",
+                  "disabled": false
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "",
+                  "description": "UNPAID, PAYMENT_APPROVAL, PAYMENT_PENDING, PAID. Để trống để lấy tất cả.",
+                  "disabled": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Registration Detail (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Lấy thông tin chi tiết đăng ký xe cho admin.\n\n**Response bao gồm:**\n- Thông tin đăng ký (biển số, loại xe, màu sắc, v.v.)\n- Trạng thái (`status`, `paymentStatus`)\n- Thông tin admin (người duyệt, thời gian duyệt, ghi chú)\n- Danh sách ảnh đính kèm\n- Thông tin thanh toán (số tiền, ngày thanh toán, gateway)",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/admin/vehicle-registrations/{{vehicleRegistrationId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "admin",
+                "vehicle-registrations",
+                "{{vehicleRegistrationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Vehicle Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Đã kiểm tra thông tin xe. Phê duyệt đăng ký.\",\n  \"issueMessage\": \"Thẻ xe đã được phê duyệt. Vui lòng thanh toán để hoàn tất đăng ký.\"\n}"
+            },
+            "description": "Admin phê duyệt đăng ký xe.\n\n**Điều kiện:**\n- Chỉ approve được khi `status = PENDING` hoặc `READY_FOR_PAYMENT`\n- Sau khi approve: `status = APPROVED`\n\n**Lưu ý:**\n- Nếu đăng ký ở trạng thái `READY_FOR_PAYMENT` (chưa thanh toán), admin có thể approve trước, sau đó user mới thanh toán.\n- Nếu đăng ký ở trạng thái `PENDING` (đã thanh toán), admin approve để hoàn tất quy trình.",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/admin/vehicle-registrations/{{vehicleRegistrationId}}/approve",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "admin",
+                "vehicle-registrations",
+                "{{vehicleRegistrationId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Payment as Paid (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "description": "Admin đánh dấu thanh toán thành công (không qua VNPay).\n\n**⚠️ Mục đích:**\n- Dùng để test hoặc đánh dấu thanh toán thủ công khi không qua VNPay\n- Giúp admin xem được đăng ký ở trạng thái đã thanh toán\n\n**Điều kiện:**\n- Chỉ admin mới được gọi\n- Đăng ký chưa được đánh dấu là `PAID`\n\n**Thay đổi trạng thái:**\n- `paymentStatus`: `UNPAID`/`PAYMENT_APPROVAL` → `PAID`\n- `status`: \n  - Nếu là đăng ký mới: `READY_FOR_PAYMENT`/`PAYMENT_PENDING` → `PENDING` (chờ admin duyệt)\n  - Nếu là gia hạn (`NEEDS_RENEWAL`/`SUSPENDED`): → `APPROVED`\n- `paymentDate`: Set = thời gian hiện tại\n- `paymentGateway`: Set = `MANUAL`\n\n**Lưu ý:**\n- API này sẽ ghi nhận thanh toán vào billing service\n- Không cần gửi body",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/admin/vehicle-registrations/{{vehicleRegistrationId}}/mark-paid",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "admin",
+                "vehicle-registrations",
+                "{{vehicleRegistrationId}}",
+                "mark-paid"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Vehicle Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Thông tin xe không hợp lệ.\",\n  \"issueMessage\": \"Vui lòng kiểm tra lại thông tin đăng ký và gửi lại.\"\n}"
+            },
+            "description": "Admin từ chối đăng ký xe.\n\n**Điều kiện:**\n- Chỉ admin mới có thể reject\n- Có thể reject khi đăng ký ở trạng thái `PENDING` hoặc `READY_FOR_PAYMENT`\n- Không thể reject nếu đã `REJECTED` hoặc `CANCELLED`\n\n**Request Body:**\n- `note` (optional): Lý do từ chối (tối đa 2000 ký tự)\n- `issueMessage` (optional): Thông điệp gửi cư dân (tối đa 2000 ký tự)\n- `decision` (optional): Không sử dụng cho vehicle registration\n\n**Sau khi reject:**\n- `status = REJECTED`\n- `rejectionReason = note`\n- `adminNote = note`\n- `updatedAt` được cập nhật\n\n**Ví dụ lý do từ chối:**\n- \"Biển số xe không hợp lệ\"\n- \"Thông tin chủ xe không khớp\"\n- \"Ảnh đăng ký không rõ ràng\"\n- \"Thiếu giấy tờ cần thiết\"",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/admin/vehicle-registrations/{{vehicleRegistrationId}}/reject",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "admin",
+                "vehicle-registrations",
+                "{{vehicleRegistrationId}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "VNPay Return Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/vnpay/return?vnp_Amount=30000000&vnp_BankCode=NCB&vnp_CardType=ATM&vnp_OrderInfo=Vehicle+Registration&vnp_PayDate=20240101120000&vnp_ResponseCode=00&vnp_TmnCode=YOUR_TMN_CODE&vnp_TransactionNo=12345678&vnp_TransactionStatus=00&vnp_TxnRef=REG123456&vnp_SecureHash=YOUR_HASH",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "vnpay",
+                "return"
+              ],
+              "query": [
+                {
+                  "key": "vnp_Amount",
+                  "value": "30000000"
+                },
+                {
+                  "key": "vnp_BankCode",
+                  "value": "NCB"
+                },
+                {
+                  "key": "vnp_ResponseCode",
+                  "value": "00"
+                },
+                {
+                  "key": "vnp_TxnRef",
+                  "value": "REG123456"
+                },
+                {
+                  "key": "vnp_SecureHash",
+                  "value": "YOUR_HASH"
+                }
+              ]
+            },
+            "description": "VNPay callback endpoint cho web sau khi thanh toán.\n\n**Flow trạng thái sau khi thanh toán thành công:**\n- `paymentStatus = PAID`\n- Nếu là đăng ký mới: `status = PENDING` (chờ admin duyệt)\n- Nếu là gia hạn (NEEDS_RENEWAL/SUSPENDED): `status = APPROVED`\n\n**Lưu ý:**\n- `vnp_ResponseCode = 00` và `vnp_TransactionStatus = 00` nghĩa là thanh toán thành công\n- API này được VNPay gọi tự động, không cần gọi thủ công"
+          }
+        },
+        {
+          "name": "VNPay Redirect Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/register-service/vnpay/redirect?vnp_Amount=30000000&vnp_BankCode=NCB&vnp_CardType=ATM&vnp_OrderInfo=Vehicle+Registration&vnp_PayDate=20240101120000&vnp_ResponseCode=00&vnp_TmnCode=YOUR_TMN_CODE&vnp_TransactionNo=12345678&vnp_TransactionStatus=00&vnp_TxnRef=REG123456&vnp_SecureHash=YOUR_HASH",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "register-service",
+                "vnpay",
+                "redirect"
+              ],
+              "query": [
+                {
+                  "key": "vnp_Amount",
+                  "value": "30000000"
+                },
+                {
+                  "key": "vnp_BankCode",
+                  "value": "NCB"
+                },
+                {
+                  "key": "vnp_ResponseCode",
+                  "value": "00"
+                },
+                {
+                  "key": "vnp_TxnRef",
+                  "value": "REG123456"
+                },
+                {
+                  "key": "vnp_SecureHash",
+                  "value": "YOUR_HASH"
+                }
+              ]
+            },
+            "description": "VNPay callback endpoint cho mobile app (deep link redirect).\n\n**Flow trạng thái:**\n- Tương tự như `/vnpay/return`, nhưng redirect về mobile app thay vì web\n- Sau khi thanh toán thành công: `paymentStatus = PAID`, `status = PENDING` (đăng ký mới) hoặc `APPROVED` (gia hạn)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Elevator Card Registration",
+      "description": "Resident flows and admin decisions for elevator cards.",
+      "item": [
+        {
+          "name": "Create Elevator Card Registration & Payment URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"{{unitId}}\",\n  \"residentId\": \"{{residentId}}\",\n  \"requestType\": \"NEW_CARD\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"apartmentNumber\": \"A-12-05\",\n  \"buildingName\": \"Block A\",\n  \"citizenId\": \"012345678901\",\n  \"phoneNumber\": \"0909000999\",\n  \"note\": \"Đăng ký thẻ thang máy mới\"\n}"
+            },
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/elevator-card/vnpay-url",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "elevator-card",
+                "vnpay-url"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Elevator Card Registrations (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/elevator-card/admin/registrations",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "elevator-card",
+                "admin",
+                "registrations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Elevator Card Registration Detail (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/elevator-card/admin/registrations/{{elevatorRegistrationId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "elevator-card",
+                "admin",
+                "registrations",
+                "{{elevatorRegistrationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Elevator Card Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"APPROVE\",\n  \"note\": \"Thông tin hợp lệ, phê duyệt.\"\n}"
+            },
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/elevator-card/admin/registrations/{{elevatorRegistrationId}}/decision",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "elevator-card",
+                "admin",
+                "registrations",
+                "{{elevatorRegistrationId}}",
+                "decision"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Elevator Card Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"REJECT\",\n  \"note\": \"Ảnh xác minh không rõ.\",\n  \"issueMessage\": \"Vui lòng cung cấp ảnh rõ ràng hơn.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Admin từ chối đăng ký thẻ thang máy.\n\n**Điều kiện:**\n- Chỉ admin mới có thể reject\n- Có thể reject khi đăng ký ở trạng thái `PENDING` hoặc `READY_FOR_PAYMENT`\n- Không thể reject nếu đã `REJECTED` hoặc `CANCELLED`\n\n**Request Body:**\n- `decision` (required): Phải là `\"REJECT\"`\n- `note` (optional): Lý do từ chối\n- `issueMessage` (optional): Thông điệp gửi cư dân\n\n**Sau khi reject:**\n- `status = REJECTED`\n- `rejectionReason = note`\n- `adminNote = note`\n- `updatedAt` được cập nhật\n\n**Ví dụ lý do từ chối:**\n- \"Ảnh xác minh không rõ\"\n- \"Thông tin căn hộ không khớp\"\n- \"Thiếu giấy tờ cần thiết\"\n- \"Không đủ điều kiện đăng ký\"",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/elevator-card/admin/registrations/{{elevatorRegistrationId}}/decision",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "elevator-card",
+                "admin",
+                "registrations",
+                "{{elevatorRegistrationId}}",
+                "decision"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resident Card Registration",
+      "description": "Resident flows and admin decisions for resident access cards.",
+      "item": [
+        {
+          "name": "Get Household Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/household-members?unitId={{unitId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "household-members"
+              ],
+              "query": [
+                {
+                  "key": "unitId",
+                  "value": "{{unitId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Resident Card Registration & Payment URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"{{unitId}}\",\n  \"residentId\": \"{{residentId}}\",\n  \"requestType\": \"NEW_CARD\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"apartmentNumber\": \"A-12-05\",\n  \"buildingName\": \"Block A\",\n  \"citizenId\": \"012345678901\",\n  \"phoneNumber\": \"0909000999\",\n  \"note\": \"Đăng ký thẻ cư dân mới\"\n}"
+            },
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/vnpay-url",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "vnpay-url"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Resident Card Registration (Resident)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/{{residentRegistrationId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "{{residentRegistrationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resume Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/{{residentRegistrationId}}/resume-payment",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "{{residentRegistrationId}}",
+                "resume-payment"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Resident Card Registration",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{resident_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/{{residentRegistrationId}}/cancel",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "{{residentRegistrationId}}",
+                "cancel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Resident Card Registrations (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/admin/registrations?status=PENDING&paymentStatus=UNPAID",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "admin",
+                "registrations"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "PENDING, APPROVED, REJECTED, CANCELLED"
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "UNPAID",
+                  "description": "UNPAID, PAID, FAILED",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Resident Card Registration Detail (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/admin/registrations/{{residentRegistrationId}}",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "admin",
+                "registrations",
+                "{{residentRegistrationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Resident Card Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"APPROVE\",\n  \"note\": \"Phê duyệt phát hành thẻ cư dân.\",\n  \"issueMessage\": \"Thẻ cư dân đã được phê duyệt. Vui lòng thanh toán để hoàn tất đăng ký.\"\n}"
+            },
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/admin/registrations/{{residentRegistrationId}}/decision",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "admin",
+                "registrations",
+                "{{residentRegistrationId}}",
+                "decision"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Resident Card Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"REJECT\",\n  \"note\": \"Thông tin cư trú chưa được xác minh.\",\n  \"issueMessage\": \"Vui lòng kiểm tra lại thông tin đăng ký và gửi lại.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Admin từ chối đăng ký thẻ cư dân.\n\n**Điều kiện:**\n- Chỉ admin mới có thể reject\n- Có thể reject khi đăng ký ở trạng thái `PENDING` hoặc `READY_FOR_PAYMENT`\n- Không thể reject nếu đã `REJECTED` hoặc `CANCELLED`\n\n**Request Body:**\n- `decision` (required): Phải là `\"REJECT\"`\n- `note` (optional): Lý do từ chối\n- `issueMessage` (optional): Thông điệp gửi cư dân\n\n**Sau khi reject:**\n- `status = REJECTED`\n- `rejectionReason = note`\n- `adminNote = note`\n- `updatedAt` được cập nhật\n\n**Ví dụ lý do từ chối:**\n- \"Thông tin cư trú chưa được xác minh\"\n- \"CCCD/CMND không hợp lệ\"\n- \"Thông tin căn hộ không khớp\"\n- \"Thiếu giấy tờ cần thiết\"\n- \"Không đủ điều kiện đăng ký\"",
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/admin/registrations/{{residentRegistrationId}}/decision",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "admin",
+                "registrations",
+                "{{residentRegistrationId}}",
+                "decision"
+              ]
+            }
+          }
+        },
+        {
+          "name": "VNPay Return Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/vnpay/return?vnp_Amount=20000000&vnp_BankCode=NCB&vnp_CardType=ATM&vnp_OrderInfo=Resident+Card+Registration&vnp_PayDate=20240101120000&vnp_ResponseCode=00&vnp_TmnCode=YOUR_TMN_CODE&vnp_TransactionNo=12345678&vnp_TransactionStatus=00&vnp_TxnRef=REG123456&vnp_SecureHash=YOUR_HASH",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "vnpay",
+                "return"
+              ],
+              "query": [
+                {
+                  "key": "vnp_Amount",
+                  "value": "20000000"
+                },
+                {
+                  "key": "vnp_BankCode",
+                  "value": "NCB"
+                },
+                {
+                  "key": "vnp_ResponseCode",
+                  "value": "00"
+                },
+                {
+                  "key": "vnp_TxnRef",
+                  "value": "REG123456"
+                },
+                {
+                  "key": "vnp_SecureHash",
+                  "value": "YOUR_HASH"
+                }
+              ]
+            },
+            "description": "VNPay callback endpoint for payment return. This is typically called by VNPay after payment."
+          }
+        },
+        {
+          "name": "VNPay Redirect Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cardServiceBaseUrl}}/api/resident-card/vnpay/redirect?vnp_Amount=20000000&vnp_BankCode=NCB&vnp_CardType=ATM&vnp_OrderInfo=Resident+Card+Registration&vnp_PayDate=20240101120000&vnp_ResponseCode=00&vnp_TmnCode=YOUR_TMN_CODE&vnp_TransactionNo=12345678&vnp_TransactionStatus=00&vnp_TxnRef=REG123456&vnp_SecureHash=YOUR_HASH",
+              "host": [
+                "{{cardServiceBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resident-card",
+                "vnpay",
+                "redirect"
+              ],
+              "query": [
+                {
+                  "key": "vnp_Amount",
+                  "value": "20000000"
+                },
+                {
+                  "key": "vnp_BankCode",
+                  "value": "NCB"
+                },
+                {
+                  "key": "vnp_ResponseCode",
+                  "value": "00"
+                },
+                {
+                  "key": "vnp_TxnRef",
+                  "value": "REG123456"
+                },
+                {
+                  "key": "vnp_SecureHash",
+                  "value": "YOUR_HASH"
+                }
+              ]
+            },
+            "description": "VNPay callback endpoint for payment redirect. This redirects to mobile app deep link."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finance - Invoice Creation (After Payment)",
+      "description": "Test APIs for creating invoices in finance-billing-service after successful card payment. These APIs are called automatically by services-card-service when payment succeeds, but can be tested directly here.",
+      "item": [
+        {
+          "name": "Record Vehicle Registration Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationId\": \"{{vehicleRegistrationId}}\",\n  \"userId\": \"YOUR_USER_ID\",\n  \"unitId\": \"{{unitId}}\",\n  \"vehicleType\": \"MOTORBIKE\",\n  \"licensePlate\": \"30A1-12345\",\n  \"requestType\": \"NEW_CARD\",\n  \"note\": \"Đăng ký thẻ xe mới\",\n  \"amount\": 30000.00,\n  \"paymentDate\": \"2025-01-15T10:30:00+07:00\",\n  \"transactionRef\": \"VNPAY_TXN_REF_123\",\n  \"transactionNo\": \"12345678\",\n  \"bankCode\": \"NCB\",\n  \"cardType\": \"ATM\",\n  \"responseCode\": \"00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tạo hóa đơn cho thanh toán đăng ký thẻ xe.\n\n**Endpoint:** `POST /api/invoices/vehicle-registration-payment`\n\n**Mục đích:**\n- API này được gọi tự động bởi `services-card-service` khi thanh toán thành công\n- Tạo invoice với `serviceCode = VEHICLE_CARD`\n- Invoice được đánh dấu `status = PAID` ngay sau khi tạo\n\n**Request Body:**\n- `registrationId`: ID của vehicle registration\n- `userId`: ID của user đăng ký\n- `unitId`: ID của căn hộ\n- `vehicleType`: Loại xe (MOTORBIKE, CAR, etc.)\n- `licensePlate`: Biển số xe\n- `requestType`: Loại yêu cầu (NEW_CARD, RENEWAL)\n- `amount`: Số tiền thanh toán (mặc định 30,000 VND)\n- `paymentDate`: Ngày thanh toán\n- `transactionRef`, `transactionNo`, `bankCode`, `cardType`, `responseCode`: Thông tin từ VNPay\n\n**Response:**\n- InvoiceDto với `status = PAID`\n- `serviceCode = VEHICLE_CARD` trong invoice lines",
+            "url": {
+              "raw": "{{financeBillingUrl}}/api/invoices/vehicle-registration-payment",
+              "host": [
+                "{{financeBillingUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "vehicle-registration-payment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invoice created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const invoice = pm.response.json();",
+                  "    pm.expect(invoice).to.have.property('id');",
+                  "    pm.expect(invoice).to.have.property('code');",
+                  "    pm.expect(invoice.status).to.eql('PAID');",
+                  "    ",
+                  "    // Save invoice ID for later use",
+                  "    if (invoice.id) {",
+                  "        pm.environment.set('vehicleInvoiceId', invoice.id);",
+                  "        console.log('✅ Vehicle invoice created:', invoice.code);",
+                  "    }",
+                  "    ",
+                  "    // Check invoice lines",
+                  "    if (invoice.lines && invoice.lines.length > 0) {",
+                  "        const line = invoice.lines[0];",
+                  "        pm.expect(line.serviceCode).to.eql('VEHICLE_CARD');",
+                  "        console.log('✅ Service Code:', line.serviceCode);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record Elevator Card Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationId\": \"{{elevatorRegistrationId}}\",\n  \"userId\": \"YOUR_USER_ID\",\n  \"unitId\": \"{{unitId}}\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"apartmentNumber\": \"A1-101\",\n  \"buildingName\": \"Tòa A\",\n  \"requestType\": \"NEW_CARD\",\n  \"note\": \"Đăng ký thẻ thang máy mới\",\n  \"amount\": 30000.00,\n  \"paymentDate\": \"2025-01-15T10:30:00+07:00\",\n  \"transactionRef\": \"VNPAY_TXN_REF_456\",\n  \"transactionNo\": \"87654321\",\n  \"bankCode\": \"NCB\",\n  \"cardType\": \"ATM\",\n  \"responseCode\": \"00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tạo hóa đơn cho thanh toán đăng ký thẻ thang máy.\n\n**Endpoint:** `POST /api/invoices/elevator-card-payment`\n\n**Mục đích:**\n- API này được gọi tự động bởi `services-card-service` khi thanh toán thành công\n- Tạo invoice với `serviceCode = ELEVATOR_CARD`\n- Invoice được đánh dấu `status = PAID` ngay sau khi tạo\n\n**Request Body:**\n- `registrationId`: ID của elevator card registration\n- `userId`: ID của user đăng ký\n- `unitId`: ID của căn hộ\n- `fullName`: Tên đầy đủ của cư dân\n- `apartmentNumber`: Số căn hộ\n- `buildingName`: Tên tòa nhà\n- `amount`: Số tiền thanh toán (mặc định 30,000 VND)\n- `paymentDate`: Ngày thanh toán\n- `transactionRef`, `transactionNo`, `bankCode`, `cardType`, `responseCode`: Thông tin từ VNPay\n\n**Response:**\n- InvoiceDto với `status = PAID`\n- `serviceCode = ELEVATOR_CARD` trong invoice lines",
+            "url": {
+              "raw": "{{financeBillingUrl}}/api/invoices/elevator-card-payment",
+              "host": [
+                "{{financeBillingUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "elevator-card-payment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invoice created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const invoice = pm.response.json();",
+                  "    pm.expect(invoice).to.have.property('id');",
+                  "    pm.expect(invoice).to.have.property('code');",
+                  "    pm.expect(invoice.status).to.eql('PAID');",
+                  "    ",
+                  "    // Save invoice ID for later use",
+                  "    if (invoice.id) {",
+                  "        pm.environment.set('elevatorInvoiceId', invoice.id);",
+                  "        console.log('✅ Elevator invoice created:', invoice.code);",
+                  "    }",
+                  "    ",
+                  "    // Check invoice lines",
+                  "    if (invoice.lines && invoice.lines.length > 0) {",
+                  "        const line = invoice.lines[0];",
+                  "        pm.expect(line.serviceCode).to.eql('ELEVATOR_CARD');",
+                  "        console.log('✅ Service Code:', line.serviceCode);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Record Resident Card Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationId\": \"{{residentRegistrationId}}\",\n  \"userId\": \"YOUR_USER_ID\",\n  \"unitId\": \"{{unitId}}\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"apartmentNumber\": \"A1-101\",\n  \"buildingName\": \"Tòa A\",\n  \"requestType\": \"NEW_CARD\",\n  \"note\": \"Đăng ký thẻ cư dân mới\",\n  \"amount\": 30000.00,\n  \"paymentDate\": \"2025-01-15T10:30:00+07:00\",\n  \"transactionRef\": \"VNPAY_TXN_REF_789\",\n  \"transactionNo\": \"11223344\",\n  \"bankCode\": \"NCB\",\n  \"cardType\": \"ATM\",\n  \"responseCode\": \"00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tạo hóa đơn cho thanh toán đăng ký thẻ cư dân.\n\n**Endpoint:** `POST /api/invoices/resident-card-payment`\n\n**Mục đích:**\n- API này được gọi tự động bởi `services-card-service` khi thanh toán thành công\n- Tạo invoice với `serviceCode = RESIDENT_CARD`\n- Invoice được đánh dấu `status = PAID` ngay sau khi tạo\n\n**Request Body:**\n- `registrationId`: ID của resident card registration\n- `userId`: ID của user đăng ký\n- `unitId`: ID của căn hộ\n- `fullName`: Tên đầy đủ của cư dân\n- `apartmentNumber`: Số căn hộ\n- `buildingName`: Tên tòa nhà\n- `amount`: Số tiền thanh toán (mặc định 30,000 VND)\n- `paymentDate`: Ngày thanh toán\n- `transactionRef`, `transactionNo`, `bankCode`, `cardType`, `responseCode`: Thông tin từ VNPay\n\n**Response:**\n- InvoiceDto với `status = PAID`\n- `serviceCode = RESIDENT_CARD` trong invoice lines",
+            "url": {
+              "raw": "{{financeBillingUrl}}/api/invoices/resident-card-payment",
+              "host": [
+                "{{financeBillingUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "resident-card-payment"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invoice created successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const invoice = pm.response.json();",
+                  "    pm.expect(invoice).to.have.property('id');",
+                  "    pm.expect(invoice).to.have.property('code');",
+                  "    pm.expect(invoice.status).to.eql('PAID');",
+                  "    ",
+                  "    // Save invoice ID for later use",
+                  "    if (invoice.id) {",
+                  "        pm.environment.set('residentInvoiceId', invoice.id);",
+                  "        console.log('✅ Resident invoice created:', invoice.code);",
+                  "    }",
+                  "    ",
+                  "    // Check invoice lines",
+                  "    if (invoice.lines && invoice.lines.length > 0) {",
+                  "        const line = invoice.lines[0];",
+                  "        pm.expect(line.serviceCode).to.eql('RESIDENT_CARD');",
+                  "        console.log('✅ Service Code:', line.serviceCode);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Invoices (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{financeBillingUrl}}/api/invoices/admin/all?serviceCode=VEHICLE_CARD&status=PAID&startDate=2025-01-01&endDate=2025-01-31",
+              "host": [
+                "{{financeBillingUrl}}"
+              ],
+              "path": [
+                "api",
+                "invoices",
+                "admin",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "serviceCode",
+                  "value": "VEHICLE_CARD",
+                  "description": "Filter by service code: VEHICLE_CARD, ELEVATOR_CARD, RESIDENT_CARD, ELECTRICITY, WATER"
+                },
+                {
+                  "key": "status",
+                  "value": "PAID",
+                  "description": "Filter by status: DRAFT, PUBLISHED, PAID, VOID"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-01-01",
+                  "description": "Filter from date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-01-31",
+                  "description": "Filter to date (YYYY-MM-DD)"
+                }
+              ]
+            },
+            "description": "Lấy tất cả hóa đơn cho admin với các filters.\n\n**Endpoint:** `GET /api/invoices/admin/all`\n\n**Query Parameters:**\n- `serviceCode` (optional): Lọc theo loại dịch vụ (VEHICLE_CARD, ELEVATOR_CARD, RESIDENT_CARD, ELECTRICITY, WATER)\n- `status` (optional): Lọc theo trạng thái (DRAFT, PUBLISHED, PAID, VOID)\n- `unitId` (optional): Lọc theo căn hộ\n- `buildingId` (optional): Lọc theo tòa nhà\n- `startDate` (optional): Lọc từ ngày (YYYY-MM-DD)\n- `endDate` (optional): Lọc đến ngày (YYYY-MM-DD)\n\n**Response:**\n- Danh sách InvoiceDto được sắp xếp theo ngày phát hành (mới nhất trước)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Get invoices successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const invoices = pm.response.json();",
+                  "    pm.expect(invoices).to.be.an('array');",
+                  "    console.log('✅ Found', invoices.length, 'invoices');",
+                  "    ",
+                  "    // Log first few invoices",
+                  "    invoices.slice(0, 3).forEach((invoice, index) => {",
+                  "        console.log(`Invoice ${index + 1}: ${invoice.code} - ${invoice.status} - ${invoice.totalAmount} VND`);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "cardServiceBaseUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "iamServiceUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin_test"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin123"
+    },
+    {
+      "key": "residentUsername",
+      "value": "resident_test"
+    },
+    {
+      "key": "residentPassword",
+      "value": "resident123"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "resident_token",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "residentToken",
+      "value": ""
+    },
+    {
+      "key": "vehicleRegistrationId",
+      "value": ""
+    },
+    {
+      "key": "elevatorRegistrationId",
+      "value": ""
+    },
+    {
+      "key": "residentRegistrationId",
+      "value": ""
+    },
+    {
+      "key": "unitId",
+      "value": ""
+    },
+    {
+      "key": "residentId",
+      "value": ""
+    },
+    {
+      "key": "financeBillingUrl",
+      "value": "http://localhost:8085"
+    }
+  ]
+}
+

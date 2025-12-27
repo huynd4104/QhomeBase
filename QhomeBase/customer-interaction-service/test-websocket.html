@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket News Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .message {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .message-created {
+            border-left-color: #28a745;
+        }
+        .message-updated {
+            border-left-color: #ffc107;
+        }
+        .message-deleted {
+            border-left-color: #dc3545;
+        }
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .clear-btn {
+            background-color: #6c757d;
+        }
+        .clear-btn:hover {
+            background-color: #5a6268;
+        }
+        #messages {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 WebSocket News Message Tester</h1>
+    
+    <div class="container">
+        <h2>Connection Settings</h2>
+        <label>WebSocket URL:</label><br>
+        <input type="text" id="wsUrl" value="http://localhost:8081/ws" style="width: 300px"><br>
+        
+        <label>Tenant ID:</label><br>
+        <input type="text" id="tenantId" placeholder="Enter tenant UUID" style="width: 300px"><br>
+        
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()" class="clear-btn">Disconnect</button>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+    </div>
+    
+    <div class="container">
+        <h2>📨 Received Messages</h2>
+        <button onclick="clearMessages()" class="clear-btn">Clear Messages</button>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let messageCount = 0;
+
+        function connect() {
+            const wsUrl = document.getElementById('wsUrl').value;
+            const tenantId = document.getElementById('tenantId').value;
+            
+            if (!tenantId) {
+                alert('Please enter Tenant ID');
+                return;
+            }
+
+            const socket = new SockJS(wsUrl);
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function(frame) {
+                console.log('Connected: ' + frame);
+                updateStatus(true);
+                
+                // Subscribe to news topic for this tenant
+                const topic = '/topic/news/' + tenantId;
+                console.log('Subscribing to: ' + topic);
+                
+                stompClient.subscribe(topic, function(message) {
+                    showMessage(JSON.parse(message.body));
+                });
+                
+                addSystemMessage('Connected and subscribed to: ' + topic);
+            }, function(error) {
+                console.error('Connection error:', error);
+                updateStatus(false);
+                addSystemMessage('Connection error: ' + error);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            updateStatus(false);
+            addSystemMessage('Disconnected');
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = '✅ Connected';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = '❌ Disconnected';
+            }
+        }
+
+        function showMessage(message) {
+            messageCount++;
+            const messagesDiv = document.getElementById('messages');
+            
+            let messageClass = 'message';
+            let icon = '📰';
+            if (message.type === 'NEWS_CREATED') {
+                messageClass += ' message-created';
+                icon = '✅';
+            } else if (message.type === 'NEWS_UPDATED') {
+                messageClass += ' message-updated';
+                icon = '✏️';
+            } else if (message.type === 'NEWS_DELETED') {
+                messageClass += ' message-deleted';
+                icon = '🗑️';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = messageClass;
+            messageDiv.innerHTML = `
+                <div><strong>${icon} Message #${messageCount} - ${message.type}</strong></div>
+                <div class="timestamp">${new Date(message.timestamp).toLocaleString()}</div>
+                <pre>${JSON.stringify(message, null, 2)}</pre>
+            `;
+            
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+            
+            // Play notification sound (optional)
+            // new Audio('notification.mp3').play();
+            
+            console.log('Received message:', message);
+        }
+
+        function addSystemMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <div class="timestamp">${new Date().toLocaleString()}</div>
+                <div>${text}</div>
+            `;
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            messageCount = 0;
+        }
+
+        // Auto-connect if tenant ID is in URL
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tenantId = urlParams.get('tenantId');
+            if (tenantId) {
+                document.getElementById('tenantId').value = tenantId;
+                connect();
+            }
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+

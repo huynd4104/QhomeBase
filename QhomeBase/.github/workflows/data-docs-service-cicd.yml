@@ -1,0 +1,17 @@
+name: data-docs-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data-docs-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: data-docs-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/data-docs-service

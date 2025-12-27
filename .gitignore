@@ -1,0 +1,37 @@
+# Project specific build output directories
+# Các thư mục 'target' cụ thể cho từng module của bạn
+/QhomeBase/api-gateway/target/
+/QhomeBase/asset-maintenance-service/target/
+/QhomeBase/base-service/target/
+/QhomeBase/customer-interaction-service/target/
+/QhomeBase/data-docs-service/target/
+/QhomeBase/finance-billing-service/target/
+/QhomeBase/services-card-service/target/
+/QhomeBase/staff-work-service/target/
+/QhomeBase/iam-service/target/
+
+# General Build Outputs (Sử dụng quy tắc Wildcard ** để bao phủ tất cả)
+# Loại trừ tất cả các thư mục 'target' ở mọi cấp độ
+**/target/
+# Loại trừ tất cả các thư mục 'build' ở mọi cấp độ
+**/build/
+# Loại trừ tất cả các file .class (Java compiled files) ở mọi cấp độ
+*.class
+**/*.class
+
+# Cấu hình bảo mật (Ngăn chặn rò rỉ khóa Service Account)
+# Ignore tất cả các file Firebase service account JSON
+**/qhomeapp-firebase-adminsdk-*.json
+**/*firebase*service*account*.json
+**/*-firebase-adminsdk-*.json
+# Pattern cụ thể cho customer-interaction-service
+QhomeBase/customer-interaction-service/src/main/resources/qhomeapp-firebase-adminsdk-*.json
+# Các file service account khác
+**/service-account*.json
+**/firebase-*.json
+QhomeBase/iam-service/target/classes/com/QhomeBase/iamservice/service/UserService.class
+QHomeApp_Flutter/
+
+# IntelliJ IDEA files (IDE configuration - không nên commit)
+.idea/
+*.iml

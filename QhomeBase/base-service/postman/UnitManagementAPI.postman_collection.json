@@ -1,0 +1,980 @@
+{
+	"info": {
+		"_postman_id": "unit-management-api",
+		"name": "Unit Management API",
+		"description": "Complete API testing for Unit Management including CRUD operations, queries, and status management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Generate Test Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log('=== PRE-REQUEST DEBUG ===');",
+									"console.log('Environment Variables Check:');",
+									"console.log('- iam_service_url:', pm.environment.get('iam_service_url'));",
+									"console.log('- user_id:', pm.environment.get('user_id'));",
+									"console.log('- username:', pm.environment.get('username'));",
+									"console.log('- tenant_id:', pm.environment.get('tenant_id'));",
+									"",
+									"if (!pm.environment.get('iam_service_url')) {",
+									"    console.error('❌ iam_service_url is not set!');",
+									"}",
+									"if (!pm.environment.get('user_id')) {",
+									"    console.error('❌ user_id is not set!');",
+									"}",
+									"if (!pm.environment.get('username')) {",
+									"    console.error('❌ username is not set!');",
+									"}",
+									"if (!pm.environment.get('tenant_id')) {",
+									"    console.error('❌ tenant_id is not set!');",
+									"}",
+									"console.log('========================');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== DEBUG INFO ===');",
+									"console.log('Request URL:', pm.request.url.toString());",
+									"console.log('Request Method:', pm.request.method);",
+									"console.log('Request Headers:', JSON.stringify(pm.request.headers, null, 2));",
+									"console.log('Request Body:', pm.request.body.raw);",
+									"console.log('Environment Variables:');",
+									"console.log('- iam_service_url:', pm.environment.get('iam_service_url'));",
+									"console.log('- user_id:', pm.environment.get('user_id'));",
+									"console.log('- username:', pm.environment.get('username'));",
+									"console.log('- tenant_id:', pm.environment.get('tenant_id'));",
+									"console.log('========================');",
+									"",
+									"console.log('Response status:', pm.response.code);",
+									"console.log('Response headers:', JSON.stringify(pm.response.headers, null, 2));",
+									"console.log('Response body:', pm.response.text());",
+									"",
+									"if (pm.response.code === 200) {",
+									"    try {",
+									"        const response = pm.response.json();",
+									"        console.log('Parsed response:', response);",
+									"",
+									"        if (response.token) {",
+									"            pm.environment.set('jwt_token', response.token);",
+									"            console.log('✅ Token saved successfully!');",
+									"            console.log('Token (first 50 chars):', response.token.substring(0, 50) + '...');",
+									"            console.log('Token length:', response.token.length);",
+									"            console.log('User info:', response.user);",
+									"",
+									"            pm.test('Token generated successfully', function () {",
+									"                pm.expect(response.token).to.not.be.undefined;",
+									"                pm.expect(response.token).to.be.a('string');",
+									"                pm.expect(response.token.length).to.be.greaterThan(10);",
+									"                pm.expect(response.user).to.not.be.undefined;",
+									"            });",
+									"        } else {",
+									"            console.log('❌ No token in response');",
+									"            pm.test('Token exists in response', function () {",
+									"                pm.expect(response.token).to.not.be.undefined;",
+									"            });",
+									"        }",
+									"    } catch (error) {",
+									"        console.log('❌ Error parsing response:', error);",
+									"        pm.test('Response is valid JSON', function () {",
+									"            pm.expect(pm.response.text()).to.be.a('string');",
+									"        });",
+									"    }",
+									"} else {",
+									"    console.log('❌ Failed to generate token. Status:', pm.response.code);",
+									"    console.log('Response:', pm.response.text());",
+									"    pm.test('Token generation successful', function () {",
+									"        pm.expect(pm.response.code).to.eql(200);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"{{user_id}}\",\n    \"username\": \"{{username}}\",\n    \"tenantId\": \"{{tenant_id}}\",\n    \"roles\": [\"tenant_manager\", \"tenant_owner\"],\n    \"permissions\": [\n        \"base.unit.create\",\n        \"base.unit.update\",\n        \"base.unit.view\",\n        \"base.unit.delete\",\n        \"base.unit.status.manage\",\n        \"base.building.create\",\n        \"base.building.update\",\n        \"base.building.delete.request\",\n        \"base.building.delete.approve\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/test/generate-token",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Generate JWT token for testing"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Token is valid', function () {",
+									"    const token = pm.environment.get('jwt_token');",
+									"    pm.expect(token).to.not.be.undefined;",
+									"    pm.expect(token).to.be.a('string');",
+									"    pm.expect(token.length).to.be.greaterThan(10);",
+									"});",
+									"",
+									"console.log('Current token:', pm.environment.get('jwt_token'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"{{user_id}}\",\n    \"username\": \"{{username}}\",\n    \"tenantId\": \"{{tenant_id}}\",\n    \"roles\": [\"tenant_manager\", \"tenant_owner\"],\n    \"permissions\": [\n        \"base.unit.create\",\n        \"base.unit.update\",\n        \"base.unit.view\",\n        \"base.unit.delete\",\n        \"base.unit.status.manage\",\n        \"base.building.create\",\n        \"base.building.update\",\n        \"base.building.delete.request\",\n        \"base.building.delete.approve\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/test/generate-token",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Verify JWT token is valid"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Authorization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== AUTHORIZATION TEST ===');",
+									"console.log('JWT Token:', pm.environment.get('jwt_token'));",
+									"console.log('Response status:', pm.response.code);",
+									"console.log('Response body:', pm.response.text());",
+									"",
+									"if (pm.response.code === 200) {",
+									"    console.log('✅ Authorization working!');",
+									"    const response = pm.response.json();",
+									"    console.log('User info:', response);",
+									"} else if (pm.response.code === 403) {",
+									"    console.error('❌ Authorization failed - 403 Forbidden');",
+									"} else {",
+									"    console.log('⚠️ Unexpected status:', pm.response.code);",
+									"}",
+									"console.log('========================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/{{unit_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{unit_id}}"
+							]
+						},
+						"description": "Test if JWT token works for authorization"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints"
+		},
+		{
+			"name": "Unit CRUD Operations",
+			"item": [
+				{
+					"name": "Create Unit - Basic",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has unit data', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('code');",
+									"    pm.expect(response).to.have.property('floor');",
+									"    pm.expect(response).to.have.property('areaM2');",
+									"    pm.expect(response).to.have.property('bedrooms');",
+									"    pm.expect(response).to.have.property('status');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('unit_id', response.id);",
+									"    pm.environment.set('unit_code', response.code);",
+									"    console.log('✅ Unit created successfully!');",
+									"    console.log('Unit ID:', response.id);",
+									"    console.log('Unit Code:', response.code);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 1,\n    \"areaM2\": 50.5,\n    \"bedrooms\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Create a new unit on floor 1"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Unit - Floor 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has unit data', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('code');",
+									"    pm.expect(response.code).to.include('2');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('unit_id_floor2', response.id);",
+									"    console.log('✅ Unit on floor 2 created!');",
+									"    console.log('Unit Code:', response.code);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\",\n    \"floor\": 2,\n    \"areaM2\": 60.0,\n    \"bedrooms\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Create a new unit on floor 2"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has unit data', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('code');",
+									"    pm.expect(response).to.have.property('floor');",
+									"    pm.expect(response).to.have.property('areaM2');",
+									"    pm.expect(response).to.have.property('bedrooms');",
+									"    pm.expect(response).to.have.property('status');",
+									"});",
+									"",
+									"console.log('✅ Unit retrieved successfully!');",
+									"console.log('Unit:', pm.response.json());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/{{unit_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{unit_id}}"
+							]
+						},
+						"description": "Get unit by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Unit",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log('=== UPDATE UNIT DEBUG ===');",
+									"console.log('JWT Token:', pm.environment.get('jwt_token'));",
+									"console.log('Unit ID:', pm.environment.get('unit_id'));",
+									"console.log('Request URL:', pm.request.url.toString());",
+									"console.log('Request Method:', pm.request.method);",
+									"console.log('Request Headers:', JSON.stringify(pm.request.headers, null, 2));",
+									"console.log('Request Body:', pm.request.body.raw);",
+									"",
+									"if (!pm.environment.get('jwt_token')) {",
+									"    console.error('❌ JWT token is not set! Please run Generate Test Token first.');",
+									"}",
+									"if (!pm.environment.get('unit_id')) {",
+									"    console.error('❌ unit_id is not set! Please run Create Unit first.');",
+									"}",
+									"console.log('========================');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('=== UPDATE UNIT RESPONSE ===');",
+									"console.log('Response status:', pm.response.code);",
+									"console.log('Response headers:', JSON.stringify(pm.response.headers, null, 2));",
+									"console.log('Response body:', pm.response.text());",
+									"",
+									"if (pm.response.code === 403) {",
+									"    console.error('❌ 403 Forbidden - Check authorization!');",
+									"    console.log('Possible causes:');",
+									"    console.log('1. JWT token expired or invalid');",
+									"    console.log('2. User does not have update permission');",
+									"    console.log('3. Unit does not exist or user cannot access it');",
+									"}",
+									"",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has updated unit data', function () {",
+									"    if (pm.response.code === 200) {",
+									"        const response = pm.response.json();",
+									"        pm.expect(response).to.have.property('id');",
+									"        pm.expect(response).to.have.property('floor');",
+									"        pm.expect(response.floor).to.eql(1);",
+									"        pm.expect(response.areaM2).to.eql(55.0);",
+									"        pm.expect(response.bedrooms).to.eql(3);",
+									"    }",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    console.log('✅ Unit updated successfully!');",
+									"    console.log('Updated Unit:', pm.response.json());",
+									"}",
+									"console.log('========================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"floor\": 1,\n    \"areaM2\": 55.0,\n    \"bedrooms\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units/{{unit_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{unit_id}}"
+							]
+						},
+						"description": "Update unit information"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Unit Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('✅ Unit status changed successfully!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/{{unit_id}}/status?status=INACTIVE",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{unit_id}}",
+								"status"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "INACTIVE"
+								}
+							]
+						},
+						"description": "Change unit status to INACTIVE"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Unit (Soft Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('✅ Unit soft deleted successfully!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/{{unit_id_floor2}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{unit_id_floor2}}"
+							]
+						},
+						"description": "Soft delete unit (set status to INACTIVE)"
+					},
+					"response": []
+				}
+			],
+			"description": "Basic CRUD operations for units"
+		},
+		{
+			"name": "Unit Query Operations",
+			"item": [
+				{
+					"name": "Get Units by Building ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Response has unit data', function () {",
+									"    const response = pm.response.json();",
+									"    if (response.length > 0) {",
+									"        pm.expect(response[0]).to.have.property('id');",
+									"        pm.expect(response[0]).to.have.property('code');",
+									"        pm.expect(response[0]).to.have.property('floor');",
+									"    }",
+									"});",
+									"",
+									"console.log('✅ Units by building retrieved successfully!');",
+									"console.log('Units count:', pm.response.json().length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/building/{{building_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"building",
+								"{{building_id}}"
+							]
+						},
+						"description": "Get all units in a building"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Units by Tenant ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});",
+									"",
+									"console.log('✅ Units by tenant retrieved successfully!');",
+									"console.log('Units count:', pm.response.json().length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/tenant/{{tenant_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"tenant",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get all units for a tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Units by Floor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is an array', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('All units are on correct floor', function () {",
+									"    const response = pm.response.json();",
+									"    response.forEach(unit => {",
+									"        pm.expect(unit.floor).to.eql(1);",
+									"    });",
+									"});",
+									"",
+									"console.log('✅ Units by floor retrieved successfully!');",
+									"console.log('Units on floor 1:', pm.response.json().length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/building/{{building_id}}/floor/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"building",
+								"{{building_id}}",
+								"floor",
+								"1"
+							]
+						},
+						"description": "Get all units on floor 1 of a building"
+					},
+					"response": []
+				}
+			],
+			"description": "Query operations for units"
+		},
+		{
+			"name": "Error Cases",
+			"item": [
+				{
+					"name": "Create Unit - Invalid Building ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"console.log('✅ Error case handled correctly!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{invalid_building_id}}\",\n    \"floor\": 1,\n    \"areaM2\": 50.5,\n    \"bedrooms\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Try to create unit with invalid building ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit - Invalid ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"console.log('✅ Error case handled correctly!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/units/{{invalid_unit_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{invalid_unit_id}}"
+							]
+						},
+						"description": "Try to get unit with invalid ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Unit - Invalid ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"console.log('✅ Error case handled correctly!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"floor\": 1,\n    \"areaM2\": 55.0,\n    \"bedrooms\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units/{{invalid_unit_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units",
+								"{{invalid_unit_id}}"
+							]
+						},
+						"description": "Try to update unit with invalid ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Unit - Missing Required Fields",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"console.log('✅ Validation error handled correctly!');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tenantId\": \"{{tenant_id}}\",\n    \"buildingId\": \"{{building_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/units",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"units"
+							]
+						},
+						"description": "Try to create unit with missing required fields"
+					},
+					"response": []
+				}
+			],
+			"description": "Error handling test cases"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const token = pm.environment.get('jwt_token');",
+					"if (!token) {",
+					"    console.log('⚠️ No JWT token found. Please run \"Generate Test Token\" first.');",
+					"    return;",
+					"}",
+					"",
+					"console.log('✅ JWT token found, proceeding with request...');"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		}
+	]
+}

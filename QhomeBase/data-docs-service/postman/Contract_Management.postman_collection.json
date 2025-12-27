@@ -1,0 +1,554 @@
+{
+	"info": {
+		"_postman_id": "contract-management-001",
+		"name": "Contract Management",
+		"description": "API collection for managing contracts and contract files",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Contract Management",
+			"item": [
+				{
+					"name": "Create RENTAL Contract",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"contractId\", jsonData.id);",
+									"    pm.environment.set(\"contractNumber\", jsonData.contractNumber);",
+									"    console.log(\"Contract created: \", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"unitId\": \"{{unitId}}\",\n  \"contractNumber\": \"HD-RENTAL-{{$timestamp}}\",\n  \"contractType\": \"RENTAL\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-12-31\",\n  \"monthlyRent\": 5000000,\n  \"notes\": \"Hợp đồng thuê căn hộ (đã thanh toán đầy đủ)\",\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts?createdBy={{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts"
+							],
+							"query": [
+								{
+									"key": "createdBy",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Create a RENTAL contract. monthlyRent is REQUIRED."
+					},
+					"response": []
+				},
+				{
+					"name": "Create PURCHASE Contract",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"contractId\", jsonData.id);",
+									"    pm.environment.set(\"contractNumber\", jsonData.contractNumber);",
+									"    console.log(\"Purchase contract created: \", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"unitId\": \"{{unitId}}\",\n  \"contractNumber\": \"HD-PURCHASE-{{$timestamp}}\",\n  \"contractType\": \"PURCHASE\",\n  \"startDate\": \"2024-01-01\",\n  \"purchasePrice\": 5000000000,\n  \"purchaseDate\": \"2024-01-01\",\n  \"notes\": \"Hợp đồng mua căn hộ (đã thanh toán đầy đủ)\",\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts?createdBy={{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts"
+							],
+							"query": [
+								{
+									"key": "createdBy",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Create a PURCHASE contract. purchasePrice and purchaseDate are REQUIRED."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Contract By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}"
+							]
+						},
+						"description": "Get contract by ID with all files"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Contracts By Unit",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/unit/{{unitId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"unit",
+								"{{unitId}}"
+							]
+						},
+						"description": "Get all contracts for a specific unit"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Contracts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"active"
+							]
+						},
+						"description": "Get all active contracts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Contracts By Unit",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/unit/{{unitId}}/active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"unit",
+								"{{unitId}}",
+								"active"
+							]
+						},
+						"description": "Get active contracts for a specific unit"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Contract",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notes\": \"Updated notes\",\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}?updatedBy={{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}"
+							],
+							"query": [
+								{
+									"key": "updatedBy",
+									"value": "{{userId}}"
+								}
+							]
+						},
+						"description": "Update contract information"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Contract",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}"
+							]
+						},
+						"description": "Delete contract (soft delete)"
+					},
+					"response": []
+				}
+			],
+			"description": "Contract CRUD operations"
+		},
+		{
+			"name": "2. Contract File Management",
+			"item": [
+				{
+					"name": "Upload Single Contract File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"contractFileId\", jsonData.id);",
+									"    pm.environment.set(\"contractFileName\", jsonData.fileName);",
+									"    console.log(\"File uploaded: \", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "isPrimary",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "uploadedBy",
+									"value": "{{userId}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files"
+							]
+						},
+						"description": "Upload a single file (PDF, JPEG, PNG, HEIC) for a contract. Max size: 20MB"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Multiple Contract Files",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    console.log(\"Files uploaded: \", jsonData.length);",
+									"    if (jsonData.length > 0) {",
+									"        pm.environment.set(\"contractFileId\", jsonData[0].id);",
+									"        pm.environment.set(\"contractFileName\", jsonData[0].fileName);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "uploadedBy",
+									"value": "{{userId}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files/multiple",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files",
+								"multiple"
+							]
+						},
+						"description": "Upload multiple files for a contract. First file will be set as primary."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Contract Files",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files"
+							]
+						},
+						"description": "Get all files for a contract"
+					},
+					"response": []
+				},
+				{
+					"name": "View Contract File (Inline)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files/{{contractFileId}}/view",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files",
+								"{{contractFileId}}",
+								"view"
+							]
+						},
+						"description": "View contract file inline in browser (PDF viewer)"
+					},
+					"response": []
+				},
+				{
+					"name": "Download Contract File",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files/{{contractFileId}}/download",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files",
+								"{{contractFileId}}",
+								"download"
+							]
+						},
+						"description": "Download contract file"
+					},
+					"response": []
+				},
+				{
+					"name": "Direct File Access (Alternative)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/files/contracts/{{contractId}}/{{contractFileName}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"files",
+								"contracts",
+								"{{contractId}}",
+								"{{contractFileName}}"
+							]
+						},
+						"description": "Direct file access using fileName (alternative endpoint)"
+					},
+					"response": []
+				},
+				{
+					"name": "Set Primary File",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files/{{contractFileId}}/primary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files",
+								"{{contractFileId}}",
+								"primary"
+							]
+						},
+						"description": "Set a contract file as primary"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Contract File",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contracts/{{contractId}}/files/{{contractFileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"contracts",
+								"{{contractId}}",
+								"files",
+								"{{contractFileId}}"
+							]
+						},
+						"description": "Delete a contract file (soft delete)"
+					},
+					"response": []
+				}
+			],
+			"description": "Contract file upload and management"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "unitId",
+			"value": "550e8400-e29b-41d4-a716-446655440011",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7",
+			"type": "string"
+		},
+		{
+			"key": "contractId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contractNumber",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contractFileId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contractFileName",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

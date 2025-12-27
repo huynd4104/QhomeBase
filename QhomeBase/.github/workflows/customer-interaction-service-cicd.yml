@@ -1,0 +1,17 @@
+name: customer-interaction-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'customer-interaction-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: customer-interaction-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/customer-interaction-service

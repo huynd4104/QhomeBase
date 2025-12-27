@@ -1,0 +1,17 @@
+name: services-card-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services-card-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: services-card-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/services-card-service

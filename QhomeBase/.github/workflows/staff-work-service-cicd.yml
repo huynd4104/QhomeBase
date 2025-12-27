@@ -1,0 +1,17 @@
+name: staff-work-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'staff-work-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: staff-work-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/staff-work-service

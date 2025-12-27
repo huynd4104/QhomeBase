@@ -1,0 +1,17 @@
+name: finance-billing-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'finance-billing-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: finance-billing-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/finance-billing-service

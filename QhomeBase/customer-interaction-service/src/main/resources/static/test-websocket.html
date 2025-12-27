@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket News Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            border-radius: 4px;
+        }
+        .message-created {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+        .message-updated {
+            border-left-color: #ffc107;
+            background-color: #fff3cd;
+        }
+        .message-deleted {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        input {
+            width: 400px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .clear-btn {
+            background-color: #6c757d;
+        }
+        .clear-btn:hover {
+            background-color: #5a6268;
+        }
+        #messages {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .message-type {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 WebSocket News Message Tester</h1>
+    
+    <div class="container">
+        <h2>⚙️ Connection Settings</h2>
+        <label>WebSocket URL:</label>
+        <input type="text" id="wsUrl" value="http://localhost:8086/ws"><br>
+        
+        <label>Tenant ID:</label>
+        <input type="text" id="tenantId" placeholder="Enter tenant UUID (e.g., 550e8400-e29b-41d4-a716-446655440000)"><br>
+        
+        <button onclick="connect()">🔗 Connect</button>
+        <button onclick="disconnect()" class="clear-btn">❌ Disconnect</button>
+        
+        <div id="status" class="status disconnected">❌ Disconnected</div>
+    </div>
+    
+    <div class="container">
+        <h2>📨 Received Messages (<span id="msgCount">0</span>)</h2>
+        <button onclick="clearMessages()" class="clear-btn">🗑️ Clear Messages</button>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let messageCount = 0;
+
+        function connect() {
+            const wsUrl = document.getElementById('wsUrl').value;
+            const tenantId = document.getElementById('tenantId').value;
+            
+            if (!tenantId) {
+                alert('❌ Please enter Tenant ID');
+                return;
+            }
+
+            const socket = new SockJS(wsUrl);
+            stompClient = Stomp.over(socket);
+            
+            // Disable debug to reduce console spam
+            stompClient.debug = null;
+            
+            stompClient.connect({}, function(frame) {
+                console.log('✅ Connected:', frame);
+                updateStatus(true);
+                
+                const topic = '/topic/news/' + tenantId;
+                console.log('📡 Subscribing to:', topic);
+                
+                stompClient.subscribe(topic, function(message) {
+                    showMessage(JSON.parse(message.body));
+                });
+                
+                addSystemMessage('✅ Connected and subscribed to: ' + topic);
+            }, function(error) {
+                console.error('❌ Connection error:', error);
+                updateStatus(false);
+                addSystemMessage('❌ Connection error: ' + error);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            updateStatus(false);
+            addSystemMessage('👋 Disconnected');
+        }
+
+        function updateStatus(connected) {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = '✅ Connected';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = '❌ Disconnected';
+            }
+        }
+
+        function showMessage(message) {
+            messageCount++;
+            document.getElementById('msgCount').textContent = messageCount;
+            
+            const messagesDiv = document.getElementById('messages');
+            
+            let messageClass = 'message';
+            let icon = '📰';
+            let typeColor = '#007bff';
+            
+            if (message.type === 'NEWS_CREATED') {
+                messageClass += ' message-created';
+                icon = '✅';
+                typeColor = '#28a745';
+            } else if (message.type === 'NEWS_UPDATED') {
+                messageClass += ' message-updated';
+                icon = '✏️';
+                typeColor = '#ffc107';
+            } else if (message.type === 'NEWS_DELETED') {
+                messageClass += ' message-deleted';
+                icon = '🗑️';
+                typeColor = '#dc3545';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = messageClass;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type" style="color: ${typeColor}">${icon} ${message.type}</span>
+                    <span class="timestamp">#${messageCount} - ${new Date(message.timestamp).toLocaleString()}</span>
+                </div>
+                <pre>${JSON.stringify(message, null, 2)}</pre>
+            `;
+            
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+            
+            console.log('📨 Received message:', message);
+        }
+
+        function addSystemMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <div class="timestamp">${new Date().toLocaleString()}</div>
+                <div>${text}</div>
+            `;
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            messageCount = 0;
+            document.getElementById('msgCount').textContent = '0';
+        }
+
+        // Auto-connect if tenant ID is in URL
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tenantId = urlParams.get('tenantId');
+            if (tenantId) {
+                document.getElementById('tenantId').value = tenantId;
+                setTimeout(() => connect(), 500);
+            }
+        };
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,17 @@
+name: base-service CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'base-service/**'
+      - 'deployment/docker-compose/**'
+  workflow_dispatch:
+
+jobs:
+  call-build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      service_name: base-service
+      docker_image: ${{ secrets.DOCKER_USERNAME }}/base-service

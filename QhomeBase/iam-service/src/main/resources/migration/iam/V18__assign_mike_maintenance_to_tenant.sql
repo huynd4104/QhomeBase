@@ -1,0 +1,2 @@
+-- Migration V18: Assign mike maintenance to tenant
+-- This migration has been emptied as test data is not needed for new database clones

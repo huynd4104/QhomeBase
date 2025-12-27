@@ -1,0 +1,440 @@
+{
+	"info": {
+		"_postman_id": "iam-roles-permissions-test",
+		"name": "IAM Roles & Permissions Test",
+		"description": "Test collection for IAM service roles and permissions APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Generate Test Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uid\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"username\": \"testuser\",\n    \"tenantId\": \"2b5b2af5-9431-4649-8144-35830d866826\",\n    \"roles\": [\"admin\"],\n    \"permissions\": [\"base.tenant.create\", \"base.tenant.read\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/generate-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"generate-token"
+							]
+						},
+						"description": "Generate a test JWT token for API testing"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"password\": \"{{test_password}}\",\n    \"tennantId\": \"{{test_tenant_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get authentication token"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.accessToken);",
+									"    console.log('Token saved:', response.accessToken);",
+									"} else {",
+									"    console.log('Login failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles & Permissions Tests",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/roles/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"roles",
+								"all"
+							]
+						},
+						"description": "Get all available roles in the system"
+					},
+					"response": []
+				},
+		{
+			"name": "Get All Permissions",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"permissions"
+					]
+				},
+				"description": "Get all permissions in the system"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role - Account",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/account",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"account"
+					]
+				},
+				"description": "Get permissions for ACCOUNT role"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role - Admin",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/admin",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"admin"
+					]
+				},
+				"description": "Get permissions for ADMIN role"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role - Tenant Owner",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/tenant-owner",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"tenant-owner"
+					]
+				},
+				"description": "Get permissions for TENANT_OWNER role"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role - Technician",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/technician",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"technician"
+					]
+				},
+				"description": "Get permissions for TECHNICIAN role"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role - Supporter",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/supporter",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"supporter"
+					]
+				},
+				"description": "Get permissions for SUPPORTER role"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Role (Dynamic)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/role/{{role_name}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"role",
+						"{{role_name}}"
+					]
+				},
+				"description": "Get permissions for a specific role (use role_name variable)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Base Service Permissions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/base-service",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"base-service"
+					]
+				},
+				"description": "Get all base service permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Get IAM Service Permissions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/iam-service",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"iam-service"
+					]
+				},
+				"description": "Get all IAM service permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Maintenance Service Permissions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/maintenance-service",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"maintenance-service"
+					]
+				},
+				"description": "Get all maintenance service permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Finance Service Permissions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/roles/permissions/finance-service",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"roles",
+						"permissions",
+						"finance-service"
+					]
+				},
+				"description": "Get all finance service permissions"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permission by Code",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/permissions/{{permission_code}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"permissions",
+						"{{permission_code}}"
+					]
+				},
+				"description": "Get specific permission by code (use permission_code variable)"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Permissions by Service Prefix",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/permissions/service/{{service_prefix}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"permissions",
+						"service",
+						"{{service_prefix}}"
+					]
+				},
+				"description": "Get permissions by service prefix (e.g., base, iam, maintenance)"
+			},
+			"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8088",
+			"description": "Base URL for IAM service"
+		},
+		{
+			"key": "role_name",
+			"value": "admin",
+			"description": "Role name for dynamic role testing (admin, account, tenant_owner, technician, supporter)"
+		},
+		{
+			"key": "permission_code",
+			"value": "base.tenant.create",
+			"description": "Permission code for testing specific permission"
+		},
+		{
+			"key": "service_prefix",
+			"value": "base",
+			"description": "Service prefix for testing (base, iam, maintenance, finance, document, report, system)"
+		},
+		{
+			"key": "test_username",
+			"value": "testuser",
+			"description": "Test username for login"
+		},
+		{
+			"key": "test_password",
+			"value": "testpassword",
+			"description": "Test password for login"
+		},
+		{
+			"key": "test_tenant_id",
+			"value": "2b5b2af5-9431-4649-8144-35830d866826",
+			"description": "Test tenant ID for login"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"description": "Authentication token (will be set automatically from login response)"
+		}
+	]
+}

@@ -1,0 +1,629 @@
+{
+	"info": {
+		"name": "Vehicle Registration API",
+		"description": "Complete API flow for Vehicle Registration: Create vehicle → Request registration → Approve → Generate invoice",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseServiceUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "financeServiceUrl",
+			"value": "http://localhost:8085",
+			"type": "string"
+		},
+		{
+			"key": "tenantId",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		},
+		{
+			"key": "buildingId",
+			"value": "770e8400-e29b-41d4-a716-446655440002",
+			"type": "string"
+		},
+		{
+			"key": "unitId",
+			"value": "880e8400-e29b-41d4-a716-446655440003",
+			"type": "string"
+		},
+		{
+			"key": "residentId",
+			"value": "",
+			"type": "string",
+			"description": "Auto-set from login (userId)"
+		},
+		{
+			"key": "vehicleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registrationRequestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "Bearer ",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Login (IAM Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    ",
+									"    // Save token",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    if (token) {",
+									"        pm.collectionVariables.set('authToken', 'Bearer ' + token);",
+									"        pm.environment.set('authToken', 'Bearer ' + token);",
+									"        console.log('✅ Token saved: Bearer ' + token.substring(0, 20) + '...');",
+									"    }",
+									"    ",
+									"    // Extract userId (residentId) from response",
+									"    var userId = jsonData.userId || jsonData.id || jsonData.sub;",
+									"    if (userId) {",
+									"        pm.collectionVariables.set('residentId', userId);",
+									"        pm.environment.set('residentId', userId);",
+									"        console.log('✅ User ID (Resident ID) saved: ' + userId);",
+									"    }",
+									"    ",
+									"    // Also try to extract from JWT token",
+									"    if (!userId && token) {",
+									"        try {",
+									"            var base64Url = token.split('.')[1];",
+									"            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {",
+									"                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+									"            }).join(''));",
+									"            var payload = JSON.parse(jsonPayload);",
+									"            userId = payload.userId || payload.sub || payload.id;",
+									"            if (userId) {",
+									"                pm.collectionVariables.set('residentId', userId);",
+									"                pm.environment.set('residentId', userId);",
+									"                console.log('✅ User ID extracted from JWT: ' + userId);",
+									"            }",
+									"        } catch (e) {",
+									"            console.log('⚠️ Could not parse JWT token');",
+									"        }",
+									"    }",
+									"    ",
+									"    pm.test('Login successful', function () {",
+									"        pm.expect(token).to.not.be.null;",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iamServiceUrl}}/api/auth/login",
+							"host": ["{{iamServiceUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login to get JWT token"
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Vehicle Management",
+			"item": [
+				{
+					"name": "Create Vehicle",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('vehicleId', jsonData.id);",
+									"        pm.environment.set('vehicleId', jsonData.id);",
+									"        console.log('✅ Vehicle ID saved: ' + jsonData.id);",
+									"    }",
+									"    pm.test('Vehicle created', function () {",
+									"        pm.response.to.have.status(200);",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"residentId\": \"{{residentId}}\",\n  \"unitId\": \"{{unitId}}\",\n  \"plateNo\": \"29A-12345\",\n  \"kind\": \"CAR\",\n  \"color\": \"Black\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicles",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicles"]
+						},
+						"description": "Create a new vehicle"
+					}
+				},
+				{
+					"name": "Get Vehicle by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicles/{{vehicleId}}",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicles", "{{vehicleId}}"]
+						},
+						"description": "Get vehicle details"
+					}
+				},
+				{
+					"name": "List Vehicles by Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicles/tenant/{{tenantId}}",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicles", "tenant", "{{tenantId}}"]
+						},
+						"description": "List all vehicles by tenant"
+					}
+				},
+				{
+					"name": "List Active Vehicles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicles/tenant/{{tenantId}}/active",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicles", "tenant", "{{tenantId}}", "active"]
+						},
+						"description": "List all active vehicles"
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Registration Request",
+			"item": [
+				{
+					"name": "Create Registration Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('registrationRequestId', jsonData.id);",
+									"        pm.environment.set('registrationRequestId', jsonData.id);",
+									"        console.log('✅ Registration Request ID saved: ' + jsonData.id);",
+									"    }",
+									"    pm.test('Registration request created', function () {",
+									"        pm.response.to.have.status(200);",
+									"        pm.expect(jsonData.status).to.eql('PENDING');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tenantId\": \"{{tenantId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"reason\": \"Cần đăng ký xe để gửi tại tòa nhà\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations"]
+						},
+						"description": "Create registration request for vehicle"
+					}
+				},
+				{
+					"name": "Get Registration Request",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/{{registrationRequestId}}",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "{{registrationRequestId}}"]
+						},
+						"description": "Get registration request details"
+					}
+				}
+			]
+		},
+		{
+			"name": "4. List Pending Requests",
+			"item": [
+				{
+					"name": "Get All Pending Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/pending",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "pending"]
+						},
+						"description": "Get all pending registration requests (all tenants)"
+					}
+				},
+				{
+					"name": "Get Pending by Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/tenant/{{tenantId}}/pending",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "tenant", "{{tenantId}}", "pending"]
+						},
+						"description": "Get pending requests by tenant (all buildings)"
+					}
+				},
+				{
+					"name": "Get Pending by Building",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/tenant/{{tenantId}}/building/{{buildingId}}/pending",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "tenant", "{{tenantId}}", "building", "{{buildingId}}", "pending"]
+						},
+						"description": "Get pending requests by building"
+					}
+				},
+				{
+					"name": "Get Requests by Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/tenant/{{tenantId}}/building/{{buildingId}}/status/PENDING",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "tenant", "{{tenantId}}", "building", "{{buildingId}}", "status", "PENDING"]
+						},
+						"description": "Get requests by building and status (PENDING/APPROVED/REJECTED)"
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Approve/Reject Request",
+			"item": [
+				{
+					"name": "Approve Request (Generate Invoice)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('✅ Request approved successfully');",
+									"    console.log('📋 Response:', JSON.stringify(jsonData, null, 2));",
+									"    pm.test('Request approved', function () {",
+									"        pm.expect(jsonData.status).to.eql('APPROVED');",
+									"    });",
+									"    ",
+									"    // Wait 2 seconds then check invoice",
+									"    setTimeout(function() {",
+									"        console.log('⏰ Checking invoice after 2 seconds...');",
+									"    }, 2000);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Đã kiểm tra và phê duyệt đăng ký xe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/{{registrationRequestId}}/approve",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "{{registrationRequestId}}", "approve"]
+						},
+						"description": "Approve registration request → Auto generate pro-rata invoice"
+					}
+				},
+				{
+					"name": "Reject Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Xe không đủ điều kiện đăng ký\"\n}"
+						},
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/{{registrationRequestId}}/reject",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "{{registrationRequestId}}", "reject"]
+						},
+						"description": "Reject registration request"
+					}
+				},
+				{
+					"name": "Cancel Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/{{registrationRequestId}}/cancel",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "{{registrationRequestId}}", "cancel"]
+						},
+						"description": "Cancel registration request (by requester or manager)"
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Finance - Invoice Check",
+			"item": [
+				{
+					"name": "Get Invoices by Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{financeServiceUrl}}/api/invoices/tenant/{{tenantId}}",
+							"host": ["{{financeServiceUrl}}"],
+							"path": ["api", "invoices", "tenant", "{{tenantId}}"]
+						},
+						"description": "Get all invoices by tenant (including parking invoices)"
+					}
+				},
+				{
+					"name": "Get Invoices by Resident",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var invoices = pm.response.json();",
+									"    ",
+									"    if (Array.isArray(invoices) && invoices.length > 0) {",
+									"        // Save the first invoice ID",
+									"        var firstInvoiceId = invoices[0].id;",
+									"        pm.collectionVariables.set('invoiceId', firstInvoiceId);",
+									"        pm.environment.set('invoiceId', firstInvoiceId);",
+									"        ",
+									"        console.log('✅ Found ' + invoices.length + ' invoice(s)');",
+									"        console.log('💾 Saved first invoiceId: ' + firstInvoiceId);",
+									"        ",
+									"        // Display invoice summary",
+									"        invoices.forEach(function(invoice, index) {",
+									"            console.log('📄 Invoice #' + (index + 1) + ': ' + invoice.code + ' - ' + invoice.status);",
+									"        });",
+									"    } else {",
+									"        console.log('⚠️ No invoices found for this resident');",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{financeServiceUrl}}/api/invoices/resident/{{residentId}}",
+							"host": ["{{financeServiceUrl}}"],
+							"path": ["api", "invoices", "resident", "{{residentId}}"]
+						},
+						"description": "Get all invoices for a resident (auto-saves first invoiceId)"
+					}
+				},
+				{
+					"name": "Get Invoice by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{financeServiceUrl}}/api/invoices/{{invoiceId}}",
+							"host": ["{{financeServiceUrl}}"],
+							"path": ["api", "invoices", "{{invoiceId}}"]
+						},
+						"description": "Get invoice details by ID"
+					}
+				},
+				{
+					"name": "Health Check - Parking Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{financeServiceUrl}}/api/parking/health",
+							"host": ["{{financeServiceUrl}}"],
+							"path": ["api", "parking", "health"]
+						},
+						"description": "Check if parking billing service is running"
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Registration Statuses",
+			"item": [
+				{
+					"name": "Get All Registration Statuses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/statuses",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "statuses"]
+						},
+						"description": "Get all possible registration statuses (PENDING, APPROVED, REJECTED, CANCELED)"
+					}
+				},
+				{
+					"name": "Get Requests by Status (All)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseServiceUrl}}/api/vehicle-registrations/status/APPROVED",
+							"host": ["{{baseServiceUrl}}"],
+							"path": ["api", "vehicle-registrations", "status", "APPROVED"]
+						},
+						"description": "Get all requests by status (across all tenants)"
+					}
+				}
+			]
+		}
+	]
+}
+

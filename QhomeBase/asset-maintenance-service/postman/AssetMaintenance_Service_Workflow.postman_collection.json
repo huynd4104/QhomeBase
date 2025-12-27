@@ -1,0 +1,708 @@
+{
+	"info": {
+		"_postman_id": "asset-maintenance-service-workflow",
+		"name": "Asset Maintenance Service Workflow",
+		"description": "End-to-end workflow to configure services, combos, options, tickets and execute a resident booking in asset-maintenance-service using real IAM login.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Auth",
+			"item": [
+				{
+					"name": "Login as Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/auth/login",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login succeeded\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"if (!json || !json.accessToken) {",
+									"    throw new Error(\"accessToken not present in login response\");",
+									"}",
+									"pm.environment.set(\"admin_token\", json.accessToken);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login as Resident",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{resident_username}}\",\n  \"password\": \"{{resident_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{iam_service_url}}/api/auth/login",
+							"host": [
+								"{{iam_service_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login succeeded\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"if (!json || !json.accessToken) {",
+									"    throw new Error(\"accessToken not present in login response\");",
+									"}",
+									"pm.environment.set(\"resident_token\", json.accessToken);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "1. Service Configuration",
+			"item": [
+				{
+					"name": "Create Service Category (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{service_category_code}}\",\n  \"name\": \"{{service_category_name}}\",\n  \"description\": \"Gym and wellness related services\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/service-categories",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"service-categories"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Category created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_category_id\", json.id);",
+									"pm.environment.set(\"service_category_code\", json.code);",
+									"pm.environment.set(\"service_category_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Service (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"categoryId\": \"{{service_category_id}}\",\n  \"code\": \"{{service_code}}\",\n  \"name\": \"{{service_name}}\",\n  \"description\": \"Personal training sessions for residents\",\n  \"location\": \"Community Gym\",\n  \"pricingType\": \"HOURLY\",\n  \"pricePerHour\": 350000,\n  \"minDurationHours\": 1,\n  \"rules\": \"Arrive 10 minutes early for warm-up\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Service created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_id\", json.id);",
+									"pm.environment.set(\"service_code\", json.code);",
+									"pm.environment.set(\"service_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Configure Catalog",
+			"item": [
+				{
+					"name": "Create Service Option (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{service_option_code}}\",\n  \"name\": \"{{service_option_name}}\",\n  \"description\": \"Extend session by 30 minutes\",\n  \"price\": 150000,\n  \"unit\": \"session\",\n  \"isRequired\": false,\n  \"isActive\": true,\n  \"sortOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/options",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"options"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Option created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_option_id\", json.id);",
+									"pm.environment.set(\"service_option_code\", json.code);",
+									"pm.environment.set(\"service_option_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Option Group (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{service_option_group_code}}\",\n  \"name\": \"{{service_option_group_name}}\",\n  \"description\": \"Optional add-ons\",\n  \"minSelect\": 0,\n  \"maxSelect\": 2,\n  \"isRequired\": false,\n  \"sortOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/option-groups",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"option-groups"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Option group created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_option_group_id\", json.id);",
+									"pm.environment.set(\"service_option_group_code\", json.code);",
+									"pm.environment.set(\"service_option_group_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Attach Options to Group (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"items\": [\n    {\n      \"optionId\": \"{{service_option_id}}\",\n      \"sortOrder\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/service-option-groups/{{service_option_group_id}}/items",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"service-option-groups",
+								"{{service_option_group_id}}",
+								"items"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Option group updated\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Service Combo (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{service_combo_code}}\",\n  \"name\": \"{{service_combo_name}}\",\n  \"description\": \"Training bundle with add-on\",\n  \"price\": 450000,\n  \"durationMinutes\": 90,\n  \"isActive\": true,\n  \"items\": [\n    {\n      \"itemName\": \"Personal Training Session\",\n      \"itemDescription\": \"1-on-1 PT for 60 minutes\",\n      \"itemPrice\": 350000,\n      \"itemDurationMinutes\": 60,\n      \"quantity\": 1,\n      \"note\": \"Includes warm-up guidance\",\n      \"sortOrder\": 0\n    },\n    {\n      \"itemName\": \"Gym Sanitizing\",\n      \"itemDescription\": \"Deep cleaning equipment after use\",\n      \"itemPrice\": 100000,\n      \"itemDurationMinutes\": 30,\n      \"quantity\": 1,\n      \"sortOrder\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/combos",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"combos"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Combo created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_combo_id\", json.id);",
+									"pm.environment.set(\"service_combo_code\", json.code);",
+									"pm.environment.set(\"service_combo_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Service Ticket (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{service_ticket_code}}\",\n  \"name\": \"{{service_ticket_name}}\",\n  \"ticketType\": \"HOURLY\",\n  \"durationHours\": 1,\n  \"price\": 200000,\n  \"maxPeople\": 1,\n  \"description\": \"Single day gym access\",\n  \"isActive\": true,\n  \"sortOrder\": 1\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/tickets",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"tickets"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ticket created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_ticket_id\", json.id);",
+									"pm.environment.set(\"service_ticket_code\", json.code);",
+									"pm.environment.set(\"service_ticket_name\", json.name);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Resident Booking Flow",
+			"item": [
+				{
+					"name": "Get Service Slots (Resident)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{resident_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/slots?fromDate={{current_date}}&toDate={{current_date}}",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"slots"
+							],
+							"query": [
+								{
+									"key": "fromDate",
+									"value": "{{current_date}}"
+								},
+								{
+									"key": "toDate",
+									"value": "{{current_date}}"
+								}
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Service slots loaded\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Service Slots By Date (Resident)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{resident_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/slots/{{current_date}}",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"slots",
+								"{{current_date}}"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Service slots for date loaded\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Booking Catalog (Resident)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{resident_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/services/{{service_id}}/booking/catalog",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"services",
+								"{{service_id}}",
+								"booking",
+								"catalog"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Catalog loaded\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Booking (Resident)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{resident_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"serviceId\": \"{{service_id}}\",\n  \"bookingDate\": \"{{current_date}}\",\n  \"startTime\": \"07:00\",\n  \"endTime\": \"08:30\",\n  \"durationHours\": 1.5,\n  \"numberOfPeople\": 1,\n  \"purpose\": \"Morning training session\",\n  \"totalAmount\": 500000,\n  \"termsAccepted\": true,\n  \"items\": [\n    {\n      \"itemType\": \"OPTION\",\n      \"itemId\": \"{{service_option_id}}\",\n      \"itemCode\": \"{{service_option_code}}\",\n      \"itemName\": \"{{service_option_name}}\",\n      \"quantity\": 1,\n      \"unitPrice\": 150000,\n      \"totalPrice\": 150000\n    }\n  ],\n  \"slots\": [\n    {\n      \"slotDate\": \"{{current_date}}\",\n      \"startTime\": \"07:00\",\n      \"endTime\": \"08:30\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/bookings",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"bookings"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const today = new Date();",
+									"const isoDate = today.toISOString().substring(0, 10);",
+									"pm.environment.set(\"current_date\", isoDate);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Booking created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"let json = pm.response.json();",
+									"pm.environment.set(\"service_booking_id\", json.id);",
+									"pm.environment.set(\"service_booking_total\", json.totalAmount);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get My Bookings (Resident)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{resident_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{asset_service_url}}/api/asset-maintenance/bookings",
+							"host": [
+								"{{asset_service_url}}"
+							],
+							"path": [
+								"api",
+								"asset-maintenance",
+								"bookings"
+							]
+						}
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Bookings returned\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [],
+	"variable": []
+}
+

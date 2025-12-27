@@ -1,0 +1,677 @@
+{
+	"info": {
+		"_postman_id": "request-mgmt-2024",
+		"name": "Request Management API (Customer Complaints)",
+		"description": "API collection for managing customer requests/complaints in QhomeBase system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Get Requests List (Filtered)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has content\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('content');",
+							"    pm.expect(jsonData.content).to.be.an('array');",
+							"});",
+							"",
+							"if (pm.response.json().content.length > 0) {",
+							"    var firstRequest = pm.response.json().content[0];",
+							"    pm.collectionVariables.set(\"requestId\", firstRequest.id);",
+							"    console.log(\"Saved requestId: \" + firstRequest.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests?tenantId={{tenantId}}&status=PENDING&priority=HIGH&pageNo=0",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests"
+					],
+					"query": [
+						{
+							"key": "projectCode",
+							"value": "",
+							"description": "Mã dự án/toà nhà",
+							"disabled": true
+						},
+						{
+							"key": "title",
+							"value": "",
+							"description": "Tiêu đề yêu cầu",
+							"disabled": true
+						},
+						{
+							"key": "residentName",
+							"value": "",
+							"description": "Tên cư dân",
+							"disabled": true
+						},
+						{
+							"key": "tenantId",
+							"value": "{{tenantId}}",
+							"description": "ID tenant (Required)"
+						},
+						{
+							"key": "status",
+							"value": "PENDING",
+							"description": "PENDING, IN_PROGRESS, RESOLVED, CLOSED"
+						},
+						{
+							"key": "priority",
+							"value": "HIGH",
+							"description": "LOW, MEDIUM, HIGH, URGENT"
+						},
+						{
+							"key": "pageNo",
+							"value": "0",
+							"description": "Số trang (default: 0)"
+						},
+						{
+							"key": "dateFrom",
+							"value": "",
+							"description": "Từ ngày (yyyy-MM-dd)",
+							"disabled": true
+						},
+						{
+							"key": "dateTo",
+							"value": "",
+							"description": "Đến ngày (yyyy-MM-dd)",
+							"disabled": true
+						}
+					]
+				},
+				"description": "Lấy danh sách yêu cầu/khiếu nại với các bộ lọc:\n- Theo tenant\n- Theo trạng thái (PENDING, IN_PROGRESS, RESOLVED, CLOSED)\n- Theo mức độ ưu tiên (LOW, MEDIUM, HIGH, URGENT)\n- Theo khoảng thời gian\n- Phân trang"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Get Request Counts by Status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has counts\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('object');",
+							"});",
+							"",
+							"console.log(\"Request Counts:\", pm.response.json());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests/counts?tenantId={{tenantId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests",
+						"counts"
+					],
+					"query": [
+						{
+							"key": "projectCode",
+							"value": "",
+							"description": "Mã dự án",
+							"disabled": true
+						},
+						{
+							"key": "title",
+							"value": "",
+							"description": "Tiêu đề",
+							"disabled": true
+						},
+						{
+							"key": "residentName",
+							"value": "",
+							"description": "Tên cư dân",
+							"disabled": true
+						},
+						{
+							"key": "tenantId",
+							"value": "{{tenantId}}",
+							"description": "ID tenant"
+						},
+						{
+							"key": "priority",
+							"value": "",
+							"description": "Mức độ ưu tiên",
+							"disabled": true
+						},
+						{
+							"key": "dateFrom",
+							"value": "",
+							"description": "Từ ngày",
+							"disabled": true
+						},
+						{
+							"key": "dateTo",
+							"value": "",
+							"description": "Đến ngày",
+							"disabled": true
+						}
+					]
+				},
+				"description": "Lấy thống kê số lượng yêu cầu theo trạng thái:\n- PENDING: Chờ xử lý\n- IN_PROGRESS: Đang xử lý\n- RESOLVED: Đã giải quyết\n- CLOSED: Đã đóng"
+			},
+			"response": []
+		},
+		{
+			"name": "3. Get Request by ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has request data\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('requestCode');",
+							"    pm.expect(jsonData).to.have.property('status');",
+							"});",
+							"",
+							"console.log(\"Request Detail:\", pm.response.json());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests/{{requestId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests",
+						"{{requestId}}"
+					]
+				},
+				"description": "Lấy chi tiết một yêu cầu/khiếu nại theo ID"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Create New Request (Complaint)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Request created successfully\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('requestCode');",
+							"    pm.collectionVariables.set(\"newRequestId\", jsonData.id);",
+							"    console.log(\"Created Request ID: \" + jsonData.id);",
+							"    console.log(\"Request Code: \" + jsonData.requestCode);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tenantId\": \"{{tenantId}}\",\n    \"residentId\": \"{{residentId}}\",\n    \"residentName\": \"Nguyễn Văn A\",\n    \"title\": \"Khiếu nại về tiếng ồn\",\n    \"content\": \"Toà nhà phát ra tiếng ồn lớn vào ban đêm, ảnh hưởng đến giấc ngủ của gia đình. Yêu cầu kiểm tra và xử lý.\",\n    \"priority\": \"HIGH\",\n    \"status\": \"PENDING\",\n    \"imagePath\": \"https://example.com/images/complaint-noise.jpg\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests/createRequest",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests",
+						"createRequest"
+					]
+				},
+				"description": "Tạo yêu cầu/khiếu nại mới\n\n**Priorities:**\n- LOW: Thấp\n- MEDIUM: Trung bình\n- HIGH: Cao\n- URGENT: Khẩn cấp\n\n**Status:**\n- PENDING: Chờ xử lý\n- IN_PROGRESS: Đang xử lý\n- RESOLVED: Đã giải quyết\n- CLOSED: Đã đóng"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Get Processing Logs by Request ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});",
+							"",
+							"console.log(\"Processing Logs:\", pm.response.json());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests-logs/{{requestId}}/logs",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests-logs",
+						"{{requestId}}",
+						"logs"
+					]
+				},
+				"description": "Lấy danh sách lịch sử xử lý của một yêu cầu\n\nBao gồm:\n- Nhân viên xử lý\n- Nội dung xử lý\n- Thời gian xử lý\n- Trạng thái cập nhật"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Get Processing Logs by Staff ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests-logs/staff/{{staffId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests-logs",
+						"staff",
+						"{{staffId}}"
+					]
+				},
+				"description": "Lấy danh sách lịch sử xử lý của một nhân viên cụ thể"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Add Processing Log (Update Request Status)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Log created successfully\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('content');",
+							"    console.log(\"Created Log ID: \" + jsonData.id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"recordType\": \"REQUEST\",\n    \"staffInCharge\": \"{{staffId}}\",\n    \"staffInChargeName\": \"Trần Thị B - Nhân viên CSKH\",\n    \"content\": \"Đã kiểm tra hiện trường và xác nhận nguồn gốc tiếng ồn. Tiến hành khắc phục.\",\n    \"requestStatus\": \"IN_PROGRESS\",\n    \"logType\": \"STATUS_UPDATE\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests-logs/{{requestId}}/logs",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests-logs",
+						"{{requestId}}",
+						"logs"
+					]
+				},
+				"description": "Thêm log xử lý mới và cập nhật trạng thái yêu cầu\n\n**Log Types:**\n- STATUS_UPDATE: Cập nhật trạng thái\n- COMMENT: Bình luận\n- ATTACHMENT: Đính kèm file\n- ASSIGNMENT: Phân công\n\n**Request Status:**\n- PENDING: Chờ xử lý\n- IN_PROGRESS: Đang xử lý\n- RESOLVED: Đã giải quyết\n- CLOSED: Đã đóng"
+			},
+			"response": []
+		},
+		{
+			"name": "8. Resolve Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Request resolved\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.requestStatus).to.equal(\"RESOLVED\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"recordType\": \"REQUEST\",\n    \"staffInCharge\": \"{{staffId}}\",\n    \"staffInChargeName\": \"Trần Thị B - Nhân viên CSKH\",\n    \"content\": \"Đã khắc phục xong vấn đề tiếng ồn. Đã kiểm tra và xác nhận không còn tiếng ồn bất thường. Cư dân hài lòng với kết quả xử lý.\",\n    \"requestStatus\": \"RESOLVED\",\n    \"logType\": \"RESOLUTION\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests-logs/{{requestId}}/logs",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests-logs",
+						"{{requestId}}",
+						"logs"
+					]
+				},
+				"description": "Đánh dấu yêu cầu đã được giải quyết với log chi tiết"
+			},
+			"response": []
+		},
+		{
+			"name": "9. Close Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Request closed\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.requestStatus).to.equal(\"CLOSED\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"recordType\": \"REQUEST\",\n    \"staffInCharge\": \"{{staffId}}\",\n    \"staffInChargeName\": \"Trần Thị B - Nhân viên CSKH\",\n    \"content\": \"Yêu cầu đã được giải quyết hoàn tất và được cư dân xác nhận. Đóng yêu cầu.\",\n    \"requestStatus\": \"CLOSED\",\n    \"logType\": \"CLOSURE\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/customer-interaction/requests-logs/{{requestId}}/logs",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"customer-interaction",
+						"requests-logs",
+						"{{requestId}}",
+						"logs"
+					]
+				},
+				"description": "Đóng yêu cầu sau khi đã giải quyết và cư dân xác nhận hài lòng"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8086",
+			"type": "string"
+		},
+		{
+			"key": "tenantId",
+			"value": "your-tenant-id-here",
+			"type": "string"
+		},
+		{
+			"key": "residentId",
+			"value": "your-resident-id-here",
+			"type": "string"
+		},
+		{
+			"key": "staffId",
+			"value": "your-staff-id-here",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "your-jwt-token-here",
+			"type": "string"
+		},
+		{
+			"key": "requestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "newRequestId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

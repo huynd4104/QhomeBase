@@ -1,0 +1,57 @@
+# Compiled class files
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+.mvn/wrapper/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.DS_Store?
+
+# Logs
+*.log
+logs/
+
+# Application specific
+uploads/
+temp/
+
+# Build
+build/
+out/
+dist/
+
+# Generated sources
+**/generated-sources/
+**/generated-test-sources/
+
+# Firebase Service Account Keys (Security - Do not commit)
+# Ignore tất cả các file Firebase service account JSON
+**/*firebase*service*account*.json
+**/qhomeapp-firebase-adminsdk-*.json
+**/*-firebase-adminsdk-*.json
+**/service-account*.json
+**/firebase-*.json
+

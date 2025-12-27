@@ -1,0 +1,68 @@
+-- Simplify meter_reading_sessions: Remove status, use completed_at instead
+-- completed_at IS NULL = session in progress
+-- completed_at NOT NULL = session completed
+
+-- Add assignment_id to link session with assignment
+ALTER TABLE data.meter_reading_sessions
+ADD COLUMN IF NOT EXISTS assignment_id UUID;
+
+-- Add foreign key constraint
+ALTER TABLE data.meter_reading_sessions
+ADD CONSTRAINT fk_session_assignment 
+FOREIGN KEY (assignment_id) REFERENCES data.meter_reading_assignments(id) ON DELETE CASCADE;
+
+-- Drop check constraint first
+ALTER TABLE data.meter_reading_sessions
+DROP CONSTRAINT IF EXISTS ck_session_status;
+
+-- Drop status column
+ALTER TABLE data.meter_reading_sessions
+DROP COLUMN IF EXISTS status;
+
+-- Add index for querying active sessions
+CREATE INDEX IF NOT EXISTS idx_sessions_active 
+ON data.meter_reading_sessions(reader_id, assignment_id) 
+WHERE completed_at IS NULL;
+
+-- Add index for completed sessions
+CREATE INDEX IF NOT EXISTS idx_sessions_completed 
+ON data.meter_reading_sessions(assignment_id, completed_at);
+
+-- Helper function to check if staff has active session
+CREATE OR REPLACE FUNCTION data.staff_has_active_session(staff_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 
+        FROM data.meter_reading_sessions 
+        WHERE reader_id = staff_id 
+          AND completed_at IS NULL
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Helper function to get active session for staff
+CREATE OR REPLACE FUNCTION data.get_active_session(staff_id UUID)
+RETURNS UUID AS $$
+DECLARE
+    session_id UUID;
+BEGIN
+    SELECT id INTO session_id
+    FROM data.meter_reading_sessions
+    WHERE reader_id = staff_id
+      AND completed_at IS NULL
+    LIMIT 1;
+    
+    RETURN session_id;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+COMMENT ON COLUMN data.meter_reading_sessions.completed_at 
+IS 'NULL = session in progress, NOT NULL = session completed. Replaces old status column.';
+
+COMMENT ON FUNCTION data.staff_has_active_session 
+IS 'Check if staff has any active (uncompleted) session';
+
+COMMENT ON FUNCTION data.get_active_session 
+IS 'Get active session ID for staff, returns NULL if no active session';
+
