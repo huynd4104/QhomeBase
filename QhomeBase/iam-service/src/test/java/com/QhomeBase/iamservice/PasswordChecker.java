@@ -6,7 +6,7 @@ public class PasswordChecker {
     public static void main(String[] args) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-        String rawPassword = "huy412004";
+        String rawPassword = "abc12345";
 
         // Băm lần 1
         String encodedPassword1 = encoder.encode(rawPassword);
