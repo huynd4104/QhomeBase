@@ -6,6 +6,7 @@ public record UserInfoDto(
         String userId,
         String username,
         String email,
+        String phone,
         List<String> roles,
         List<String> permissions
 ) {}

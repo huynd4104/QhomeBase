@@ -1,4 +1,0 @@
-ALTER TABLE iam.users
-    ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(255);
-
-

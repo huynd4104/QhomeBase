@@ -15,6 +15,10 @@ import com.QhomeBase.baseservice.service.BuildingService;
 import com.QhomeBase.baseservice.service.BuildingDeletionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -34,9 +38,18 @@ public class buildingController {
     private final AuthzService authzService;
 
 
+    // NOTE: keep legacy list response for other modules.
     @GetMapping
     public ResponseEntity<List<BuildingDto>> findAll() {
         List<BuildingDto> buildings = buildingService.findAllDtoOrderByCodeAsc();
+        return ResponseEntity.ok(buildings);
+    }
+
+    // NOTE: paged endpoint for building management list with global ordering.
+    @GetMapping("/page")
+    public ResponseEntity<Page<Building>> findAllPaged(
+            @PageableDefault(sort = "code", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<Building> buildings = buildingService.findAllOrderByCodeAsc(pageable);
         return ResponseEntity.ok(buildings);
     }
 
@@ -53,7 +66,7 @@ public class buildingController {
     @PostMapping
     @PreAuthorize("@authz.canCreateBuilding()")
     public ResponseEntity<BuildingDto> createBuilding(
-            @Valid @RequestBody BuildingCreateReq req, 
+            @Valid @RequestBody BuildingCreateReq req,
             Authentication auth) {
         var user = (UserPrincipal) auth.getPrincipal();
         BuildingDto createdBuilding = buildingService.createBuilding(req, user.username());
@@ -90,7 +103,7 @@ public class buildingController {
     }
 
 
-    
+
     @PostMapping("/{buildingId}/deletion-request")
     @PreAuthorize("@authz.canRequestDeleteBuilding(#buildingId)")
     public ResponseEntity<BuildingDeletionRequestDto> createBuildingDeletionRequest(
@@ -192,7 +205,7 @@ public class buildingController {
         var deletingBuildings = buildingDeletionService.getDeletingBuildingsRaw();
         return ResponseEntity.ok(deletingBuildings);
     }
-    
+
     @GetMapping("/{buildingId}/targets-status")
     public ResponseEntity<Map<String, Object>> getBuildingDeletionTargetsStatus(@PathVariable UUID buildingId, Authentication auth) {
         return ResponseEntity.ok(buildingDeletionService.getBuildingDeletionTargetsStatus(buildingId));
