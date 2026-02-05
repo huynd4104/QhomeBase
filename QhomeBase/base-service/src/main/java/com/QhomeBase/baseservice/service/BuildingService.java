@@ -11,6 +11,10 @@ import com.QhomeBase.baseservice.repository.BuildingRepository;
 import com.QhomeBase.baseservice.repository.UnitRepository;
 import com.QhomeBase.baseservice.security.UserPrincipal;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +39,17 @@ public class BuildingService {
         return respo.findAllByOrderByCodeAsc().stream()
                 .sorted(Comparator.comparing(Building::getId))
                 .collect(Collectors.toList());
+    }
+
+    // NOTE: ép sắp xếp code ASC khi client không gửi sort để giữ thứ tự toàn cục trước khi phân trang.
+    public Page<Building> findAllOrderByCodeAsc(Pageable pageable) {
+        Pageable sortedPageable = pageable;
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            int pageNumber = pageable != null ? pageable.getPageNumber() : 0;
+            int pageSize = pageable != null ? pageable.getPageSize() : 20;
+            sortedPageable = PageRequest.of(pageNumber, pageSize, Sort.by("code").ascending());
+        }
+        return respo.findAllByOrderByCodeAsc(sortedPageable);
     }
 
     public BuildingDto getBuildingById(UUID buildingId) {
@@ -116,7 +131,7 @@ public class BuildingService {
                 0
         );
     }
-    
+
     public BuildingDto createBuilding(BuildingCreateReq req, String createdBy) {
         String newCode = generateNextCode();
 
@@ -131,10 +146,10 @@ public class BuildingService {
 
         return toDto(saved);
     }
-    
+
     public BuildingDto updateBuilding(UUID buildingId, BuildingUpdateReq req, Authentication auth) {
         var u = (UserPrincipal) auth.getPrincipal();
-        
+
         var existing = respo.findById(buildingId)
                 .orElseThrow(() -> new IllegalArgumentException("Building not found"));
 
@@ -148,19 +163,19 @@ public class BuildingService {
         Building saved = respo.save(existing);
         return toDto(saved);
     }
-    
+
     @Transactional
     public void changeBuildingStatus(UUID buildingId, BuildingStatus newStatus, Authentication auth) {
         var u = (UserPrincipal) auth.getPrincipal();
-        
+
         Building building = respo.findById(buildingId)
                 .orElseThrow(() -> new IllegalArgumentException("Building not found with id: " + buildingId));
-        
+
         building.setStatus(newStatus);
         building.setUpdatedBy(u.username());
-        
+
         respo.save(building);
-        
+
         // When building status changes to INACTIVE, set all units to INACTIVE
         // When building status changes to ACTIVE, do nothing (keep units' current status)
         if (newStatus == BuildingStatus.INACTIVE) {
