@@ -37,6 +37,13 @@ public class BuildingService {
                 .collect(Collectors.toList());
     }
 
+    public List<BuildingDto> findAllDtoOrderByCodeAsc() {
+        return respo.findAllByOrderByCodeAsc().stream()
+                .sorted(Comparator.comparing(Building::getId))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     public BuildingDto getBuildingById(UUID buildingId) {
         Building building = respo.findById(buildingId)
                 .orElseThrow(() -> new IllegalArgumentException("Building not found with id: " + buildingId));
@@ -113,7 +120,8 @@ public class BuildingService {
                 building.getAddress(),
                 building.getNumberOfFloors(),
                 0,
-                0
+                0,
+                building.getStatus()
         );
     }
     

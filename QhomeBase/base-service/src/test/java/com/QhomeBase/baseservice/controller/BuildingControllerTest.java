@@ -70,11 +70,9 @@ class BuildingControllerTest {
 
         @Test
         void shouldFindAll_whenBuildingsExist() throws Exception {
-                var b1 = Building.builder().id(UUID.randomUUID()).code("A").name("A1").address("addr1")
-                                .createdAt(OffsetDateTime.now()).updatedAt(OffsetDateTime.now()).build();
-                var b2 = Building.builder().id(UUID.randomUUID()).code("B").name("B1").address("addr2")
-                                .createdAt(OffsetDateTime.now()).updatedAt(OffsetDateTime.now()).build();
-                Mockito.when(buildingService.findAllOrderByCodeAsc()).thenReturn(List.of(b1, b2));
+                var dto1 = new BuildingDto(UUID.randomUUID(), "A", "A1", "addr1", 10, 100, 90, BuildingStatus.ACTIVE);
+                var dto2 = new BuildingDto(UUID.randomUUID(), "B", "B1", "addr2", 5, 50, 45, BuildingStatus.ACTIVE);
+                Mockito.when(buildingService.findAllDtoOrderByCodeAsc()).thenReturn(List.of(dto1, dto2));
 
                 mockMvc.perform(get("/api/buildings"))
                                 .andExpect(status().isOk())
@@ -85,7 +83,7 @@ class BuildingControllerTest {
 
         @Test
         void shouldGetBuildingById_whenExists() throws Exception {
-                var dto = new BuildingDto(buildingId, "A", "A1", "addr1", 10, 100, 90);
+                var dto = new BuildingDto(buildingId, "A", "A1", "addr1", 10, 100, 90, BuildingStatus.ACTIVE);
                 Mockito.when(buildingService.getBuildingById(eq(buildingId))).thenReturn(dto);
 
                 mockMvc.perform(get("/api/buildings/{buildingId}", buildingId))
@@ -109,7 +107,7 @@ class BuildingControllerTest {
         void shouldCreateBuilding_whenAuthorized() throws Exception {
                 Mockito.when(authzService.canCreateBuilding()).thenReturn(true);
                 var req = new BuildingCreateReq("New Building", "Addr", 5);
-                var dto = new BuildingDto(UUID.randomUUID(), "C", "New Building", "Addr", 5, 0, 0);
+                var dto = new BuildingDto(UUID.randomUUID(), "C", "New Building", "Addr", 5, 0, 0, BuildingStatus.ACTIVE);
                 Mockito.when(buildingService.createBuilding(eq(req), eq("adminUser"))).thenReturn(dto);
 
                 var ctx = new org.springframework.security.core.context.SecurityContextImpl();
@@ -131,7 +129,7 @@ class BuildingControllerTest {
         void shouldUpdateBuilding_whenAuthorized() throws Exception {
                 Mockito.when(authzService.canUpdateBuilding()).thenReturn(true);
                 var req = new BuildingUpdateReq("Upd", "Addr2", 7);
-                var dto = new BuildingDto(buildingId, "A", "Upd", "Addr2", 7, 100, 95);
+                var dto = new BuildingDto(buildingId, "A", "Upd", "Addr2", 7, 100, 95, BuildingStatus.ACTIVE);
                 Mockito.when(buildingService.updateBuilding(eq(buildingId), eq(req), any())).thenReturn(dto);
 
                 var ctx = new org.springframework.security.core.context.SecurityContextImpl();

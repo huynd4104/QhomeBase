@@ -5,6 +5,7 @@ import com.QhomeBase.baseservice.dto.UnitCreateDto;
 import com.QhomeBase.baseservice.dto.UnitDto;
 import com.QhomeBase.baseservice.dto.UnitUpdateDto;
 import com.QhomeBase.baseservice.model.Building;
+import com.QhomeBase.baseservice.model.BuildingStatus;
 import com.QhomeBase.baseservice.model.Unit;
 import com.QhomeBase.baseservice.model.UnitStatus;
 import com.QhomeBase.baseservice.repository.UnitRepository;
@@ -266,6 +267,14 @@ public class UnitService {
         
         Building building = buildingRepository.findById(dto.buildingId())
                 .orElseThrow(() -> new IllegalArgumentException("Building not found"));
+        
+        // Unhappy Case: Building must be ACTIVE to create unit
+        if (building.getStatus() != BuildingStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    String.format("Không thể thêm căn hộ vì tòa nhà '%s' hiện không hoạt động (trạng thái: %s).", 
+                            building.getName(), building.getStatus()));
+        }
+        
         if (building.getNumberOfFloors() != null && dto.floor() > building.getNumberOfFloors()) {
             throw new IllegalArgumentException(
                     String.format("Floor %d vượt quá số tầng của tòa nhà (%d tầng)", 
@@ -305,6 +314,14 @@ public class UnitService {
             throw new IllegalArgumentException("Unit not found: " + unitId);
         }
         Building building = existingUnit.getBuilding();
+        
+        // Unhappy Case: Building must be ACTIVE to update unit
+        if (building.getStatus() != BuildingStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    String.format("Không thể cập nhật căn hộ vì tòa nhà '%s' hiện không hoạt động (trạng thái: %s).", 
+                            building.getName(), building.getStatus()));
+        }
+        
         if (building.getNumberOfFloors() != null && dto.floor() > building.getNumberOfFloors()) {
             throw new IllegalArgumentException(
                     String.format("Floor %d vượt quá số tầng của tòa nhà (%d tầng)", 

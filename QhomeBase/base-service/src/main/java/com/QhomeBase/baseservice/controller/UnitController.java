@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -23,25 +24,30 @@ public class UnitController {
 
     @PostMapping
     @PreAuthorize("@authz.canCreateUnit(#dto.buildingId())")
-    public ResponseEntity<UnitDto> createUnit(@Valid @RequestBody UnitCreateDto dto, Authentication auth) {
+    public ResponseEntity<?> createUnit(@Valid @RequestBody UnitCreateDto dto, Authentication auth) {
         try {
             UnitDto result = unitService.createUnit(dto);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@authz.canUpdateUnit(#id)")
-    public ResponseEntity<UnitDto> updateUnit(@PathVariable UUID id, @Valid @RequestBody UnitUpdateDto dto) {
+    public ResponseEntity<?> updateUnit(@PathVariable UUID id, @Valid @RequestBody UnitUpdateDto dto) {
         try {
             UnitDto result = unitService.updateUnit(dto, id);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 

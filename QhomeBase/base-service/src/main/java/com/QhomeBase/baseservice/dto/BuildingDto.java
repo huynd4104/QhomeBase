@@ -1,5 +1,7 @@
 package com.QhomeBase.baseservice.dto;
 
+import com.QhomeBase.baseservice.model.BuildingStatus;
+
 import java.util.UUID;
 
 public record BuildingDto(
@@ -9,5 +11,6 @@ public record BuildingDto(
         String address,
         Integer floorsMax,
         Integer totalApartmentsAll,
-        Integer totalApartmentsActive
+        Integer totalApartmentsActive,
+        BuildingStatus status
 ) {}

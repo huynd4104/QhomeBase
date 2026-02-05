@@ -35,8 +35,8 @@ public class buildingController {
 
 
     @GetMapping
-    public ResponseEntity<List<Building>> findAll() {
-        List<Building> buildings = buildingService.findAllOrderByCodeAsc();
+    public ResponseEntity<List<BuildingDto>> findAll() {
+        List<BuildingDto> buildings = buildingService.findAllDtoOrderByCodeAsc();
         return ResponseEntity.ok(buildings);
     }
 

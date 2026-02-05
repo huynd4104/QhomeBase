@@ -148,7 +148,7 @@ class UnitControllerTest {
                 Mockito.when(authzService.canUpdateUnit(eq(unitId))).thenReturn(true);
                 var update = new UnitUpdateDto(11, java.math.BigDecimal.valueOf(95), 2);
                 Mockito.when(unitService.updateUnit(eq(update), eq(unitId)))
-                                .thenThrow(new IllegalArgumentException("nf"));
+                                .thenThrow(new IllegalArgumentException("Unit not found: " + unitId));
 
                 mockMvc.perform(put("/api/units/{id}", unitId)
                                 .contentType(MediaType.APPLICATION_JSON)
