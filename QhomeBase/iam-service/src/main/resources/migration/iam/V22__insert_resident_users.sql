@@ -1,3 +1,0 @@
--- Migration V22: Insert users for test residents
--- This migration has been emptied as test data is not needed for new database clones
--- Note: RESIDENT role creation is handled in other migrations

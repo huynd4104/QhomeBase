@@ -53,7 +53,9 @@ public class User {
     @Email(message = "Email should be valid")
     @Column(nullable = false, unique = true, columnDefinition = "citext")
     private String email;
-    
+
+    @Column(name = "phone", unique = true)
+    private String phone;
     
     @NotBlank(message = "Password hash is required")
     @Column(name = "password_hash", nullable = false)

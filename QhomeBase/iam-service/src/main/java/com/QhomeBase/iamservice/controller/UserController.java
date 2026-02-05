@@ -75,6 +75,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
+                            user.getPhone(),
                             roleNames,
                             permissions
                     );
@@ -192,6 +193,7 @@ public class UserController {
                                 user.getId().toString(),
                                 user.getUsername(),
                                 user.getEmail(),
+                                user.getPhone(),
                                 roleNames,
                                 permissions
                         );
@@ -326,6 +328,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
+                            user.getPhone(),
                             roleNames,
                             permissions
                     );
@@ -359,6 +362,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
+                            user.getPhone(),
                             roleNames,
                             permissions
                     );

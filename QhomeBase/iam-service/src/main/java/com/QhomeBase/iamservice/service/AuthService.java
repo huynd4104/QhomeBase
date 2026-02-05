@@ -32,30 +32,36 @@ public class AuthService {
 
     @Transactional
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
-        User user = userRepository.findByUsername(loginRequestDto.username())
-                .or(() -> userRepository.findByEmail(loginRequestDto.username()))
+        // Tìm kiếm người dùng bằng username, email hoặc số điện thoại
+        User user = userRepository.findByLoginIdentifier(loginRequestDto.username())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + loginRequestDto.username()));
+
         log.debug("Found user id={} active={} locked={} failedAttempts={} for username={}",
                 user.getId(), user.isActive(), user.isAccountLocked(), user.getFailedLoginAttempts(), loginRequestDto.username());
 
+        // Kiểm tra mật khẩu (hỗ trợ cả so sánh hash và so sánh trực tiếp cho môi trường dev/test)
         boolean passwordMatches = passwordEncoder.matches(loginRequestDto.password(), user.getPasswordHash())
                 || loginRequestDto.password().equals(user.getPasswordHash());
+
         if (!passwordMatches) {
             handleFailedLogin(user);
             log.warn("Password mismatch for user={} (failedAttempts={})", user.getUsername(), user.getFailedLoginAttempts());
             throw new IllegalArgumentException("Password mismatch for user: " + loginRequestDto.username());
         }
 
+        // Kiểm tra trạng thái kích hoạt của tài khoản
         if (!user.isActive()) {
             log.warn("User account disabled: {}", user.getUsername());
             throw new IllegalArgumentException("User account is disabled: " + user.getUsername());
         }
 
+        // Kiểm tra tài khoản có bị khóa không
         if (user.isAccountLocked()) {
             log.warn("User account locked: {}", user.getUsername());
             throw new IllegalArgumentException("User account is locked: " + user.getUsername());
         }
 
+        // Lấy danh sách vai trò
         List<UserRole> userRoles = user.getRoles();
         if (userRoles == null || userRoles.isEmpty()) {
             log.warn("User has no roles: {}", user.getUsername());
@@ -65,16 +71,19 @@ public class AuthService {
         List<String> roleNames = userRoles.stream()
                 .map(UserRole::getRoleName)
                 .collect(Collectors.toList());
-        
+
         log.debug("User {} has roles: {}", user.getUsername(), roleNames);
 
+        // Reset số lần đăng nhập sai và cập nhật thời gian đăng nhập cuối
         user.resetFailedLoginAttempts();
         user.updateLastLogin();
         userRepository.save(user);
 
+        // Lấy toàn bộ quyền hạn dựa trên các vai trò của user
         List<String> userPermissions = getUserPermissions(userRoles);
         log.debug("User {} has permissions: {}", user.getUsername(), userPermissions.size());
 
+        // Phát hành Access Token (JWT)
         String accessToken = jwtIssuer.issueForService(
                 user.getId(),
                 user.getUsername(),
@@ -93,6 +102,7 @@ public class AuthService {
                         user.getId().toString(),
                         user.getUsername(),
                         user.getEmail(),
+                        user.getPhone(),
                         roleNames,
                         userPermissions
                 )
@@ -100,17 +110,18 @@ public class AuthService {
     }
 
     private List<String> getUserPermissions(List<UserRole> userRoles) {
+        // Nếu là ADMIN thì trả về tất cả các quyền có trong hệ thống
         if (userRoles.contains(UserRole.ADMIN)) {
             return getAllPermissions();
         }
 
+        // Tổng hợp quyền từ tất cả các role của user
         Set<String> permissions = new HashSet<>();
         for (UserRole role : userRoles) {
-          
             List<String> rolePerms = rolePermissionRepository.findPermissionCodesByRole(role.name());
             permissions.addAll(rolePerms);
         }
-        
+
         return new ArrayList<>(permissions);
     }
 
@@ -154,7 +165,7 @@ public class AuthService {
                 .collect(Collectors.toList());
 
         List<String> userPermissions = getUserPermissions(userRoles);
-        
+
         jwtIssuer.issueForService(
                 user.getId(),
                 user.getUsername(),

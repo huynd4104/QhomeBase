@@ -17,6 +17,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     Optional<User> findByEmail(String email);
 
+    // Thêm vào sau các phương thức hiện có
+    @Query("SELECT u FROM User u WHERE u.username = :loginId OR u.email = :loginId OR u.phone = :loginId")
+    Optional<User> findByLoginIdentifier(@Param("loginId") String loginId);
+
     @Query(value = """
         SELECT DISTINCT u.* 
         FROM iam.users u
