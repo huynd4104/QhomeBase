@@ -1,2 +1,0 @@
--- Migration V9: Fix password hashes
--- This migration has been emptied as test data is not needed for new database clones

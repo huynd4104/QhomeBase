@@ -1,2 +1,0 @@
--- Migration V8: Insert test users
--- This migration has been emptied as test data is not needed for new database clones
