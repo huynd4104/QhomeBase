@@ -2,11 +2,13 @@ package com.QhomeBase.iamservice.client;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -25,8 +27,7 @@ public class BaseServiceClient {
                 userId,
                 fullName,
                 email,
-                phone
-        );
+                phone);
         try {
             baseServiceWebClient
                     .post()
@@ -46,9 +47,34 @@ public class BaseServiceClient {
         }
     }
 
+    public List<UUID> getResidentUserIdsByBuilding(UUID buildingId) {
+        if (buildingId == null) {
+            return List.of();
+        }
+        try {
+            return baseServiceWebClient
+                    .get()
+                    .uri("/api/residents/user-ids-by-building/{buildingId}", buildingId)
+                    .headers(headers -> {
+                        String token = extractToken();
+                        if (token != null) {
+                            headers.setBearerAuth(token);
+                        }
+                    })
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<UUID>>() {
+                    })
+                    .block();
+        } catch (Exception e) {
+            log.error("Error fetching resident user IDs by building {}: {}", buildingId, e.getMessage());
+            return List.of();
+        }
+    }
+
     private String extractToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof com.QhomeBase.iamservice.security.UserPrincipal principal) {
+        if (authentication != null
+                && authentication.getPrincipal() instanceof com.QhomeBase.iamservice.security.UserPrincipal principal) {
             return principal.token();
         }
         return null;
@@ -58,11 +84,6 @@ public class BaseServiceClient {
             UUID userId,
             String fullName,
             String email,
-            String phone
-    ) {}
+            String phone) {
+    }
 }
-
-
-
-
-

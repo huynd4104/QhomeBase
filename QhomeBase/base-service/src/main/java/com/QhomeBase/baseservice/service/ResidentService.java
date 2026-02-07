@@ -32,6 +32,13 @@ public class ResidentService {
                 .toList();
     }
 
+    public List<UUID> findUserIdsByBuildingId(UUID buildingId) {
+        if (buildingId == null) {
+            return Collections.emptyList();
+        }
+        return residentRepository.findUserIdsByBuildingId(buildingId);
+    }
+
     public List<ResidentDto> findAllByStatus(ResidentStatus status) {
         if (status == null) {
             return findAll();
@@ -56,25 +63,27 @@ public class ResidentService {
         }
         // Normalize phone: remove all non-digit characters
         String normalizedPhone = phonePrefix.replaceAll("[^0-9]", "");
-        
+
         // Only search if exactly 10 digits (full phone number)
         // This ensures users enter complete phone numbers before seeing suggestions
         if (normalizedPhone.length() != 10) {
-            log.debug("Phone prefix length is not 10, skipping search. Length: {}, prefix: '{}'", normalizedPhone.length(), normalizedPhone);
+            log.debug("Phone prefix length is not 10, skipping search. Length: {}, prefix: '{}'",
+                    normalizedPhone.length(), normalizedPhone);
             return Collections.emptyList();
         }
-        
-        log.debug("Searching residents by exact phone number - original: '{}', normalized: '{}'", phonePrefix, normalizedPhone);
-        
+
+        log.debug("Searching residents by exact phone number - original: '{}', normalized: '{}'", phonePrefix,
+                normalizedPhone);
+
         List<Resident> residents = new java.util.ArrayList<>();
-        
+
         // If prefix starts with 0, try with 0 first, then without 0
         if (normalizedPhone.startsWith("0")) {
             // Try with leading zero (as-is)
             log.debug("Trying search with prefix: '{}'", normalizedPhone);
             residents = residentRepository.findByPhonePrefix(normalizedPhone);
             log.debug("Found {} residents with prefix '{}'", residents.size(), normalizedPhone);
-            
+
             // If no results, try without leading zero
             if (residents.isEmpty() && normalizedPhone.length() > 1) {
                 String withoutZero = normalizedPhone.substring(1);
@@ -88,7 +97,7 @@ public class ResidentService {
             log.debug("Trying search with leading zero: '{}'", withZero);
             residents = residentRepository.findByPhonePrefix(withZero);
             log.debug("Found {} residents with prefix '{}'", residents.size(), withZero);
-            
+
             // If no results, try without leading zero
             if (residents.isEmpty()) {
                 log.debug("Trying search without leading zero: '{}'", normalizedPhone);
@@ -96,13 +105,13 @@ public class ResidentService {
                 log.debug("Found {} residents with prefix '{}'", residents.size(), normalizedPhone);
             }
         }
-        
+
         // Limit to 10 results for performance
         List<ResidentDto> result = residents.stream()
                 .limit(10)
                 .map(this::toDto)
                 .toList();
-        
+
         log.debug("Returning {} residents for phone prefix '{}'", result.size(), phonePrefix);
         return result;
     }
@@ -147,20 +156,20 @@ public class ResidentService {
         }
         // Normalize phone: remove all non-digit characters
         String normalizedPhone = phone.replaceAll("[^0-9]", "");
-        
+
         // Try exact match first
         Optional<Resident> residentOpt = residentRepository.findByPhone(normalizedPhone);
-        
+
         // If not found and phone doesn't start with 0, try with leading zero
         if (residentOpt.isEmpty() && !normalizedPhone.startsWith("0") && normalizedPhone.length() > 0) {
             residentOpt = residentRepository.findByPhone("0" + normalizedPhone);
         }
-        
+
         // If not found and phone starts with 0, try without leading zero
         if (residentOpt.isEmpty() && normalizedPhone.startsWith("0") && normalizedPhone.length() > 1) {
             residentOpt = residentRepository.findByPhone(normalizedPhone.substring(1));
         }
-        
+
         Resident resident = residentOpt
                 .orElseThrow(() -> new IllegalArgumentException("Resident not found for phone: " + phone));
         return toDto(resident);
@@ -207,8 +216,7 @@ public class ResidentService {
                 resident.getStatus(),
                 resident.getUserId(),
                 resident.getCreatedAt(),
-                resident.getUpdatedAt()
-        );
+                resident.getUpdatedAt());
     }
 
     @Transactional

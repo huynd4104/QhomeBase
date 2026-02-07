@@ -58,8 +58,8 @@ public class UserController {
                     List<UserRole> userRoles = user.getRoles();
                     List<String> roleNames = userRoles != null && !userRoles.isEmpty()
                             ? userRoles.stream()
-                                .map(UserRole::getRoleName)
-                                .collect(Collectors.toList())
+                                    .map(UserRole::getRoleName)
+                                    .collect(Collectors.toList())
                             : List.of();
 
                     Set<String> permissionsSet = new HashSet<>();
@@ -77,8 +77,7 @@ public class UserController {
                             user.getEmail(),
                             user.getPhone(),
                             roleNames,
-                            permissions
-                    );
+                            permissions);
                     return ResponseEntity.ok(userInfo);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -93,8 +92,7 @@ public class UserController {
                             user.isActive(),
                             user.getFailedLoginAttempts(),
                             user.isAccountLocked(),
-                            user.getLastLogin()
-                    );
+                            user.getLastLogin());
                     return ResponseEntity.ok(status);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -108,8 +106,9 @@ public class UserController {
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-            
-            if (request.username() != null && !request.username().isBlank() && !request.username().equalsIgnoreCase(user.getUsername())) {
+
+            if (request.username() != null && !request.username().isBlank()
+                    && !request.username().equalsIgnoreCase(user.getUsername())) {
                 String trimmedUsername = request.username().trim();
                 userRepository.findByUsername(trimmedUsername).ifPresent(existing -> {
                     if (!existing.getId().equals(userId)) {
@@ -119,7 +118,8 @@ public class UserController {
                 user.setUsername(trimmedUsername);
             }
 
-            if (request.email() != null && !request.email().isBlank() && !request.email().equalsIgnoreCase(user.getEmail())) {
+            if (request.email() != null && !request.email().isBlank()
+                    && !request.email().equalsIgnoreCase(user.getEmail())) {
                 String trimmedEmail = request.email().trim();
                 userRepository.findByEmail(trimmedEmail).ifPresent(existing -> {
                     if (!existing.getId().equals(userId)) {
@@ -134,11 +134,11 @@ public class UserController {
             }
 
             userRepository.save(user);
-            
+
             // Reload user with roles initialized to avoid lazy loading issues
             User saved = userService.findUserWithRolesById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-            
+
             return ResponseEntity.ok(toAccountDto(saved));
         } catch (IllegalArgumentException e) {
             log.warn("Failed to update user profile {}: {}", userId, e.getMessage());
@@ -149,7 +149,7 @@ public class UserController {
         }
     }
 
-    @RequestMapping(value = "/{userId}/password", method = {RequestMethod.PATCH, RequestMethod.PUT})
+    @RequestMapping(value = "/{userId}/password", method = { RequestMethod.PATCH, RequestMethod.PUT })
     @PreAuthorize("@authz.canUpdateUser(#userId)")
     public ResponseEntity<Void> updatePassword(
             @PathVariable UUID userId,
@@ -176,27 +176,27 @@ public class UserController {
                         List<UserRole> userRoles = user.getRoles();
                         List<String> roleNames = userRoles != null && !userRoles.isEmpty()
                                 ? userRoles.stream()
-                                    .map(UserRole::getRoleName)
-                                    .collect(Collectors.toList())
+                                        .map(UserRole::getRoleName)
+                                        .collect(Collectors.toList())
                                 : List.of();
-                        
+
                         Set<String> permissionsSet = new HashSet<>();
                         if (userRoles != null && !userRoles.isEmpty()) {
                             for (UserRole role : userRoles) {
-                                List<String> rolePerms = rolePermissionRepository.findPermissionCodesByRole(role.name());
+                                List<String> rolePerms = rolePermissionRepository
+                                        .findPermissionCodesByRole(role.name());
                                 permissionsSet.addAll(rolePerms);
                             }
                         }
                         List<String> permissions = new ArrayList<>(permissionsSet);
-                        
+
                         return new UserInfoDto(
                                 user.getId().toString(),
                                 user.getUsername(),
                                 user.getEmail(),
                                 user.getPhone(),
                                 roleNames,
-                                permissions
-                        );
+                                permissions);
                     })
                     .collect(Collectors.toList());
             return ResponseEntity.ok(availableStaff);
@@ -211,53 +211,56 @@ public class UserController {
             @Valid @RequestBody CreateUserForResidentDto request) {
         try {
             var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof com.QhomeBase.iamservice.security.UserPrincipal principal) {
+            if (auth != null
+                    && auth.getPrincipal() instanceof com.QhomeBase.iamservice.security.UserPrincipal principal) {
                 log.info("Creating user for resident: roles={}, perms={}", principal.roles(), principal.perms());
             } else {
                 log.warn("No authentication found when creating user for resident");
             }
             User user;
-            
+
             String buildingName = request.buildingName();
             if (request.autoGenerate()) {
                 if (request.username() == null || request.username().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new ErrorResponseDto("Username is required when autoGenerate is true"));
+                    return ResponseEntity.badRequest()
+                            .body(new ErrorResponseDto("Username is required when autoGenerate is true"));
                 }
                 if (request.email() == null || request.email().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new ErrorResponseDto("Email is required when autoGenerate is true"));
+                    return ResponseEntity.badRequest()
+                            .body(new ErrorResponseDto("Email is required when autoGenerate is true"));
                 }
                 user = userService.createUserWithAutoGeneratedPassword(
                         request.username(),
                         request.email(),
                         request.residentId(),
-                        buildingName
-                );
+                        buildingName);
             } else {
                 if (request.username() == null || request.username().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new ErrorResponseDto("Username is required when autoGenerate is false"));
+                    return ResponseEntity.badRequest()
+                            .body(new ErrorResponseDto("Username is required when autoGenerate is false"));
                 }
                 if (request.email() == null || request.email().isEmpty()) {
-                    return ResponseEntity.badRequest().body(new ErrorResponseDto("Email is required when autoGenerate is false"));
+                    return ResponseEntity.badRequest()
+                            .body(new ErrorResponseDto("Email is required when autoGenerate is false"));
                 }
-                // If password is not provided, auto-generate it (allows custom username with auto-generated password)
+                // If password is not provided, auto-generate it (allows custom username with
+                // auto-generated password)
                 if (request.password() == null || request.password().isEmpty()) {
                     user = userService.createUserWithAutoGeneratedPassword(
                             request.username(),
                             request.email(),
                             request.residentId(),
-                            buildingName
-                    );
+                            buildingName);
                 } else {
-                user = userService.createUserForResident(
-                        request.username(),
-                        request.email(),
-                        request.password(),
-                        request.residentId(),
-                        buildingName
-                );
+                    user = userService.createUserForResident(
+                            request.username(),
+                            request.email(),
+                            request.password(),
+                            request.residentId(),
+                            buildingName);
                 }
             }
-            
+
             UserAccountDto accountDto = new UserAccountDto(
                     user.getId(),
                     user.getUsername(),
@@ -265,9 +268,8 @@ public class UserController {
                     user.getRoles().stream()
                             .map(UserRole::getRoleName)
                             .collect(Collectors.toList()),
-                    user.isActive()
-            );
-            
+                    user.isActive());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(accountDto);
         } catch (IllegalArgumentException e) {
             log.warn("Failed to create user for resident: {}", e.getMessage());
@@ -279,7 +281,7 @@ public class UserController {
                     .body(new ErrorResponseDto(errorMessage));
         }
     }
-    
+
     @GetMapping("/{userId}/account-info")
     @PreAuthorize("@authz.canViewUser(#userId) or hasRole('RESIDENT')")
     @Transactional(readOnly = true)
@@ -290,19 +292,18 @@ public class UserController {
                     List<String> roleNames = user.getRoles().stream()
                             .map(UserRole::getRoleName)
                             .collect(Collectors.toList());
-                    
+
                     UserAccountDto accountDto = new UserAccountDto(
                             user.getId(),
                             user.getUsername(),
                             user.getEmail(),
                             roleNames,
-                            user.isActive()
-                    );
+                            user.isActive());
                     return ResponseEntity.ok(accountDto);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     @GetMapping("/by-username/{username}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RESIDENT') or hasAuthority('PERM_iam.user.read') or hasAuthority('PERM_base.resident.approve')")
     public ResponseEntity<UserInfoDto> getUserByUsername(@PathVariable String username) {
@@ -311,10 +312,10 @@ public class UserController {
                     List<UserRole> userRoles = user.getRoles();
                     List<String> roleNames = userRoles != null && !userRoles.isEmpty()
                             ? userRoles.stream()
-                                .map(UserRole::getRoleName)
-                                .collect(Collectors.toList())
+                                    .map(UserRole::getRoleName)
+                                    .collect(Collectors.toList())
                             : List.of();
-                    
+
                     Set<String> permissionsSet = new HashSet<>();
                     if (userRoles != null && !userRoles.isEmpty()) {
                         for (UserRole role : userRoles) {
@@ -323,20 +324,19 @@ public class UserController {
                         }
                     }
                     List<String> permissions = new ArrayList<>(permissionsSet);
-                    
+
                     UserInfoDto userInfo = new UserInfoDto(
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
                             user.getPhone(),
                             roleNames,
-                            permissions
-                    );
+                            permissions);
                     return ResponseEntity.ok(userInfo);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     @GetMapping("/by-email/{email}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RESIDENT') or hasAuthority('PERM_iam.user.read') or hasAuthority('PERM_base.resident.approve')")
     public ResponseEntity<UserInfoDto> getUserByEmail(@PathVariable String email) {
@@ -345,10 +345,10 @@ public class UserController {
                     List<UserRole> userRoles = user.getRoles();
                     List<String> roleNames = userRoles != null && !userRoles.isEmpty()
                             ? userRoles.stream()
-                                .map(UserRole::getRoleName)
-                                .collect(Collectors.toList())
+                                    .map(UserRole::getRoleName)
+                                    .collect(Collectors.toList())
                             : List.of();
-                    
+
                     Set<String> permissionsSet = new HashSet<>();
                     if (userRoles != null && !userRoles.isEmpty()) {
                         for (UserRole role : userRoles) {
@@ -357,15 +357,14 @@ public class UserController {
                         }
                     }
                     List<String> permissions = new ArrayList<>(permissionsSet);
-                    
+
                     UserInfoDto userInfo = new UserInfoDto(
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
                             user.getPhone(),
                             roleNames,
-                            permissions
-                    );
+                            permissions);
                     return ResponseEntity.ok(userInfo);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -380,8 +379,7 @@ public class UserController {
                     request.username(),
                     request.email(),
                     roles,
-                    request.active() == null || request.active()
-            );
+                    request.active() == null || request.active());
             baseServiceClient.syncStaffResident(user.getId(), request.username(), request.email(), null);
             return ResponseEntity.status(HttpStatus.CREATED).body(toAccountDto(user));
         } catch (IllegalArgumentException e) {
@@ -423,7 +421,8 @@ public class UserController {
     public ResponseEntity<byte[]> downloadStaffImportTemplate() {
         byte[] data = staffImportService.generateTemplateWorkbook();
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentType(
+                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"staff_import_template.xlsx\"")
                 .body(data);
     }
@@ -434,7 +433,8 @@ public class UserController {
         try {
             byte[] data = accountExportService.exportAccountsToExcel();
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .contentType(MediaType
+                            .parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"accounts_export.xlsx\"")
                     .body(data);
         } catch (Exception e) {
@@ -445,9 +445,16 @@ public class UserController {
 
     @GetMapping("/residents")
     @PreAuthorize("@authz.canViewAllUsers()")
-    public ResponseEntity<List<UserAccountDto>> listResidentAccounts() {
-        List<UserAccountDto> residents = userService.findResidentAccounts()
-                .stream()
+    public ResponseEntity<List<UserAccountDto>> listResidentAccounts(
+            @RequestParam(required = false) UUID buildingId) {
+        List<User> users;
+        if (buildingId != null) {
+            List<UUID> userIds = baseServiceClient.getResidentUserIdsByBuilding(buildingId);
+            users = userService.findResidentAccountsByUserIds(userIds);
+        } else {
+            users = userService.findResidentAccounts();
+        }
+        List<UserAccountDto> residents = users.stream()
                 .map(this::toAccountDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(residents);
@@ -475,8 +482,7 @@ public class UserController {
                     request.email(),
                     request.active(),
                     request.newPassword(),
-                    roles
-            );
+                    roles);
             baseServiceClient.syncStaffResident(updated.getId(), updated.getUsername(), updated.getEmail(), null);
             return ResponseEntity.ok(toAccountDto(updated));
         } catch (IllegalArgumentException e) {
@@ -494,26 +500,25 @@ public class UserController {
         try {
             User user = userService.findUserWithRolesById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-            
+
             // Check if user is staff or resident
-            boolean isStaff = user.getRoles().stream().anyMatch(role -> 
-                role == UserRole.ADMIN || 
-                role == UserRole.ACCOUNTANT || 
-                role == UserRole.TECHNICIAN || 
-                role == UserRole.SUPPORTER
-            );
-            
+            boolean isStaff = user.getRoles().stream().anyMatch(role -> role == UserRole.ADMIN ||
+                    role == UserRole.ACCOUNTANT ||
+                    role == UserRole.TECHNICIAN ||
+                    role == UserRole.SUPPORTER);
+
             if (isStaff) {
                 userService.deleteStaffAccount(userId);
             } else {
                 // For resident accounts, check if inactive
                 if (user.isActive()) {
-                    throw new IllegalArgumentException("Cannot delete active resident account. Please deactivate it first.");
+                    throw new IllegalArgumentException(
+                            "Cannot delete active resident account. Please deactivate it first.");
                 }
                 userRepository.delete(user);
                 log.info("Deleted resident user account {}", userId);
             }
-            
+
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             log.warn("Failed to delete account {}: {}", userId, e.getMessage());
@@ -543,63 +548,46 @@ public class UserController {
             boolean active,
             int failedLoginAttempts,
             boolean accountLocked,
-            java.time.LocalDateTime lastLogin
-    ) {}
+            java.time.LocalDateTime lastLogin) {
+    }
 
     public record UpdateUserProfileRequest(
             String username,
             String email,
-            Boolean active
-    ) {}
+            Boolean active) {
+    }
 
     public record UpdatePasswordRequest(
-            @NotBlank(message = "New password is required")
-            @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
-            @Pattern(
-                    regexp = "^(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-                    message = "Password must be at least 8 characters and contain at least one special character"
-            )
-            String newPassword
-    ) {}
+            @NotBlank(message = "New password is required") @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters") @Pattern(regexp = "^(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", message = "Password must be at least 8 characters and contain at least one special character") String newPassword) {
+    }
 
     public record CreateStaffRequest(
-            @NotBlank(message = "Username is required")
-            @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-            String username,
-            @NotBlank(message = "Email is required")
-            @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com")
-            String email,
-            @NotEmpty(message = "Staff roles are required")
-            List<@NotBlank(message = "Role value cannot be blank") String> roles,
-            Boolean active
-    ) {}
+            @NotBlank(message = "Username is required") @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters") String username,
+            @NotBlank(message = "Email is required") @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com") String email,
+            @NotEmpty(message = "Staff roles are required") List<@NotBlank(message = "Role value cannot be blank") String> roles,
+            Boolean active) {
+    }
 
     public record UpdateStaffRequest(
-            @NotBlank(message = "Username is required")
-            @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-            String username,
-            @NotBlank(message = "Email is required")
-            @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com")
-            String email,
+            @NotBlank(message = "Username is required") @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters") String username,
+            @NotBlank(message = "Email is required") @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com") String email,
             Boolean active,
             List<@NotBlank(message = "Role value cannot be blank") String> roles,
-            @Size(min = 8, message = "New password must be at least 8 characters")
-            String newPassword
-    ) {}
+            @Size(min = 8, message = "New password must be at least 8 characters") String newPassword) {
+    }
 
     private UserAccountDto toAccountDto(User user) {
         List<String> roleNames = user.getRoles() != null
                 ? user.getRoles().stream()
-                .map(UserRole::getRoleName)
-                .collect(Collectors.toList())
+                        .map(UserRole::getRoleName)
+                        .collect(Collectors.toList())
                 : List.of();
         return new UserAccountDto(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 roleNames,
-                user.isActive()
-        );
+                user.isActive());
     }
 
     private List<UserRole> parseStaffRoles(List<String> roles) {

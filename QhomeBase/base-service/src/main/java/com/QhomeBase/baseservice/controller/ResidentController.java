@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class ResidentController {
-    
+
     private final ResidentAccountService residentAccountService;
     private final ResidentService residentService;
 
@@ -34,10 +34,10 @@ public class ResidentController {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             UUID requesterUserId = principal.uid();
-            
+
             List<ResidentWithoutAccountDto> residents = residentAccountService
                     .getResidentsWithoutAccount(unitId, requesterUserId);
-            
+
             return ResponseEntity.ok(residents);
         } catch (IllegalArgumentException e) {
             log.warn("Failed to get residents without account: {}", e.getMessage());
@@ -45,7 +45,7 @@ public class ResidentController {
                     .body(Map.of("message", e.getMessage()));
         }
     }
-    
+
     @PostMapping("/create-account-request")
     @PreAuthorize("hasRole('RESIDENT')")
     public ResponseEntity<?> createAccountRequest(
@@ -54,10 +54,10 @@ public class ResidentController {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             UUID requesterUserId = principal.uid();
-            
+
             AccountCreationRequestDto accountRequest = residentAccountService
                     .createAccountRequest(request, requesterUserId);
-            
+
             return ResponseEntity.status(HttpStatus.CREATED).body(accountRequest);
         } catch (IllegalArgumentException e) {
             log.warn("Failed to create account request: {}", e.getMessage());
@@ -66,7 +66,6 @@ public class ResidentController {
         }
     }
 
-    
     @GetMapping("/my-account-requests")
     @PreAuthorize("hasRole('RESIDENT')")
     public ResponseEntity<?> getMyAccountRequests(
@@ -74,10 +73,10 @@ public class ResidentController {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             UUID requesterUserId = principal.uid();
-            
+
             List<AccountCreationRequestDto> requests = residentAccountService
                     .getMyRequests(requesterUserId);
-            
+
             return ResponseEntity.ok(requests);
         } catch (Exception e) {
             log.warn("Failed to get account requests: {}", e.getMessage());
@@ -105,7 +104,7 @@ public class ResidentController {
                     .body(Map.of("message", e.getMessage()));
         }
     }
-    
+
     @GetMapping("/{residentId}/account")
     @PreAuthorize("hasRole('RESIDENT')")
     public ResponseEntity<?> getResidentAccount(
@@ -114,14 +113,14 @@ public class ResidentController {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             UUID requesterUserId = principal.uid();
-            
+
             ResidentAccountDto account = residentAccountService
                     .getResidentAccount(residentId, requesterUserId);
-            
+
             if (account == null) {
                 return ResponseEntity.notFound().build();
             }
-            
+
             return ResponseEntity.ok(account);
         } catch (IllegalArgumentException e) {
             log.warn("Failed to get account for resident {}: {}", residentId, e.getMessage());
@@ -137,14 +136,14 @@ public class ResidentController {
         try {
             UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
             UUID userId = principal.uid();
-            
+
             List<UnitDto> units = residentAccountService.getMyUnits(userId);
-            
+
             long duration = System.currentTimeMillis() - startTime;
             if (duration > 500) {
                 log.warn("getMyUnits took {}ms (target: <500ms) for userId: {}", duration, userId);
             }
-            
+
             return ResponseEntity.ok(units);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -228,11 +227,10 @@ public class ResidentController {
             log.info("Found resident: id={}, phone={}, name={}", resident.id(), resident.phone(), resident.fullName());
             // Return as Map to match what chat-service expects
             Map<String, Object> response = Map.of(
-                "id", resident.id().toString(),
-                "fullName", resident.fullName() != null ? resident.fullName() : "",
-                "phone", resident.phone() != null ? resident.phone() : "",
-                "email", resident.email() != null ? resident.email() : ""
-            );
+                    "id", resident.id().toString(),
+                    "fullName", resident.fullName() != null ? resident.fullName() : "",
+                    "phone", resident.phone() != null ? resident.phone() : "",
+                    "email", resident.email() != null ? resident.email() : "");
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.warn("Failed to get resident by phone {}: {}", phone, e.getMessage());
@@ -247,7 +245,8 @@ public class ResidentController {
         try {
             log.info("🔍 [ResidentController] Searching residents by phone prefix: '{}'", phonePrefix);
             List<ResidentDto> residents = residentService.searchByPhonePrefix(phonePrefix);
-            log.info("✅ [ResidentController] Found {} residents matching phone prefix: '{}'", residents.size(), phonePrefix);
+            log.info("✅ [ResidentController] Found {} residents matching phone prefix: '{}'", residents.size(),
+                    phonePrefix);
             if (residents.isEmpty()) {
                 log.debug("⚠️ [ResidentController] No residents found. This could mean:");
                 log.debug("   1. No residents have phone numbers starting with '{}'", phonePrefix);
@@ -256,7 +255,8 @@ public class ResidentController {
             }
             return ResponseEntity.ok(residents);
         } catch (Exception e) {
-            log.error("❌ [ResidentController] Failed to search residents by phone prefix '{}': {}", phonePrefix, e.getMessage(), e);
+            log.error("❌ [ResidentController] Failed to search residents by phone prefix '{}': {}", phonePrefix,
+                    e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
@@ -337,5 +337,18 @@ public class ResidentController {
                     .body(Map.of("exists", false));
         }
     }
-}
 
+    @GetMapping("/user-ids-by-building/{buildingId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORTER')")
+    public ResponseEntity<List<UUID>> getResidentUserIdsByBuilding(@PathVariable UUID buildingId) {
+        try {
+            log.info("Fetching resident user IDs for building: {}", buildingId);
+            List<UUID> userIds = residentService.findUserIdsByBuildingId(buildingId);
+            log.info("Found {} resident user IDs for building {}", userIds.size(), buildingId);
+            return ResponseEntity.ok(userIds);
+        } catch (Exception e) {
+            log.error("Failed to get resident user IDs by building {}: {}", buildingId, e.getMessage(), e);
+            return ResponseEntity.ok(List.of());
+        }
+    }
+}
