@@ -81,8 +81,15 @@ class AuthControllerTest {
         void shouldReturnLoginResponse_whenCredentialsValid() throws Exception {
                 // Arrange
                 var now = Instant.now();
-                var userInfo = new UserInfoDto(UUID.randomUUID().toString(), "john", "john@example.com",
-                                java.util.List.of("ADMIN"), java.util.List.of("iam.user.read"));
+                var userInfo = new UserInfoDto(
+                        UUID.randomUUID().toString(),
+                        "john",
+                        "john@example.com",
+                        "0123456789",
+                        java.util.List.of("ADMIN"), // = List.of("ADMIN")
+                        java.util.List.of("iam.user.read")
+                );
+
                 var loginResponse = new LoginResponseDto("token123", "Bearer", 3600L, now.plusSeconds(3600), userInfo);
                 Mockito.when(authService.login(any())).thenReturn(loginResponse);
                 String body = "{" +
