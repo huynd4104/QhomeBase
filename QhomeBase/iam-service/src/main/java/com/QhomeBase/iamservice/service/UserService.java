@@ -1,10 +1,13 @@
 package com.QhomeBase.iamservice.service;
 
+import com.QhomeBase.iamservice.dto.UserAccountDto;
 import com.QhomeBase.iamservice.model.User;
 import com.QhomeBase.iamservice.model.UserRole;
 import com.QhomeBase.iamservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +32,7 @@ public class UserService {
     public final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    
+
     @Transactional
     public User createUserForResident(String username, String email, String password, UUID residentId, String buildingName) {
         // Validate and trim username
@@ -159,16 +163,37 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<User> findAvailableStaffWithRoles() {
+        log.warn("🔥 findAvailableStaffWithRoles - CACHE MISS - QUERY DATABASE");
         List<User> users = userRepository.findAvailableStaff();
         users.forEach(this::initializeRoles);
         return users;
     }
 
-    @Transactional(readOnly = true)
     public List<User> findStaffWithRoles() {
         List<User> users = userRepository.findStaffUsers();
         users.forEach(this::initializeRoles);
         return users;
+    }
+
+    public List<UserAccountDto> findStaffAccountDtos() {
+        return findStaffWithRoles()
+                .stream()
+                .map(this::toAccountDto)
+                .toList();
+    }
+
+    private UserAccountDto toAccountDto(User user) {
+        return new UserAccountDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRoles() != null
+                        ? user.getRoles().stream()
+                        .map(UserRole::getRoleName)
+                        .toList()
+                        : List.of(),
+                user.isActive()
+        );
     }
 
     @Transactional(readOnly = true)

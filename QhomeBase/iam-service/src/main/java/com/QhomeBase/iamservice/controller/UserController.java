@@ -396,12 +396,19 @@ public class UserController {
     @GetMapping("/staff")
     @PreAuthorize("@authz.canViewAllUsers()")
     public ResponseEntity<List<UserAccountDto>> listStaffAccounts() {
-        List<UserAccountDto> staff = userService.findStaffWithRoles()
-                .stream()
-                .map(this::toAccountDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(staff);
+
+        List<UserAccountDto> result = userService.findStaffAccountDtos();
+
+        // 🔥 LOG QUYẾT ĐỊNH
+        log.error("CONTROLLER -> list class = {}", result.getClass());
+        log.error("CONTROLLER -> element class = {}",
+                result.isEmpty() ? "EMPTY" : result.get(0).getClass());
+        log.error("CONTROLLER -> element = {}",
+                result.isEmpty() ? "EMPTY" : result.get(0));
+
+        return ResponseEntity.ok(result);
     }
+
 
     @PostMapping(value = "/staff/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("@authz.canCreateUser()")

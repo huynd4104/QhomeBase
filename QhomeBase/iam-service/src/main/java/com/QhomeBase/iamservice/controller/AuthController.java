@@ -97,21 +97,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     @PreAuthorize("@authz.canLogout()")
-    public ResponseEntity<Void> logout(@RequestHeader("X-User-ID") UUID userId) {
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String auth) {
         try {
-            authService.logout(userId);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PostMapping("/refresh")
-    @PreAuthorize("@authz.canRefreshToken()")
-    public ResponseEntity<Void> refreshToken(
-            @RequestHeader("X-User-ID") UUID userId) {
-        try {
-            authService.refreshToken(userId);
+            String accessToken = auth.substring(7);
+            authService.logout(accessToken);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
