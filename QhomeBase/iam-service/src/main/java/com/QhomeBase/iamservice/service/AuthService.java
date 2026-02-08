@@ -10,6 +10,9 @@ import com.QhomeBase.iamservice.repository.PermissionRepository;
 import com.QhomeBase.iamservice.repository.UserRepository;
 import com.QhomeBase.iamservice.repository.RolePermissionRepository;
 import com.QhomeBase.iamservice.security.JwtIssuer;
+import com.QhomeBase.iamservice.security.JwtVerifier;
+import com.QhomeBase.iamservice.service.token.TokenBlacklistService;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,9 +31,22 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtIssuer jwtIssuer;
+    private final JwtVerifier jwtVerifier;
     private final RolePermissionRepository rolePermissionRepository;
     private final PermissionRepository permissionRepository;
+    private final TokenBlacklistService tokenBlacklistService;
+    public void putIntoBlackList(String accessToken) {
+        Claims claims = jwtVerifier.verify(accessToken);
 
+        String jti = claims.getId();
+
+        long ttlSeconds = claims.getExpiration().toInstant().getEpochSecond()
+                - Instant.now().getEpochSecond();
+
+        if (ttlSeconds > 0) {
+            tokenBlacklistService.blacklist(jti, ttlSeconds);
+        }
+    }
     @Transactional
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
         // Tìm kiếm người dùng bằng username, email hoặc số điện thoại
@@ -83,11 +100,12 @@ public class AuthService {
         List<String> userPermissions = getUserPermissions(userRoles);
         log.debug("User {} has permissions: {}", user.getUsername(), userPermissions.size());
 
+        String jti = UUID.randomUUID().toString();
         // Phát hành Access Token (JWT)
         String accessToken = jwtIssuer.issueForService(
                 user.getId(),
                 user.getUsername(),
-                null,
+                jti,
                 roleNames,
                 userPermissions,
                 "base-service,finance-service,customer-service,asset-maintenance-service,iam-service"
@@ -137,42 +155,12 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public void logout(UUID userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public void logout(String accessToken) {
+        putIntoBlackList(accessToken);
     }
 
     public boolean emailExists(String email) {
         return userRepository.findByEmail(email).isPresent();
     }
 
-    @Transactional
-    public void refreshToken(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (!user.isActive()) {
-            throw new IllegalArgumentException("User account is disabled");
-        }
-
-        List<UserRole> userRoles = user.getRoles();
-        if (userRoles == null || userRoles.isEmpty()) {
-            throw new IllegalArgumentException("User has no roles assigned");
-        }
-
-        List<String> roleNames = userRoles.stream()
-                .map(UserRole::getRoleName)
-                .collect(Collectors.toList());
-
-        List<String> userPermissions = getUserPermissions(userRoles);
-
-        jwtIssuer.issueForService(
-                user.getId(),
-                user.getUsername(),
-                null,
-                roleNames,
-                userPermissions,
-                "base-service,finance-service,customer-service,asset-maintenance-service,iam-service"
-        );
-    }
 }

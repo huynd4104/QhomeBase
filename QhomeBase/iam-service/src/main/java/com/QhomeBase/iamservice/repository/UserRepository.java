@@ -53,14 +53,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         """, nativeQuery = true)
     List<User> findByRoleIncludingInactive(@Param("role") String role);
 
-    @Query(value = """
-        SELECT DISTINCT u.*
-        FROM iam.users u
-        WHERE EXISTS (
-            SELECT 1 FROM iam.user_roles ur
-            WHERE ur.user_id = u.id
-            AND ur.role IN ('ADMIN', 'ACCOUNTANT', 'TECHNICIAN', 'SUPPORTER')
-        )
-        """, nativeQuery = true)
+    @Query("""
+    select distinct u
+    from User u
+    join fetch u.roles r
+    where r in (
+        com.QhomeBase.iamservice.model.UserRole.ADMIN,
+        com.QhomeBase.iamservice.model.UserRole.ACCOUNTANT,
+        com.QhomeBase.iamservice.model.UserRole.TECHNICIAN,
+        com.QhomeBase.iamservice.model.UserRole.SUPPORTER
+    )
+""")
     List<User> findStaffUsers();
+
 }
