@@ -9,6 +9,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class WebClientService {
@@ -18,14 +20,16 @@ public class WebClientService {
     public String baseWebClient(String targetService) {
         var ctx = SecurityContextHolder.getContext();
         var p = (UserPrincipal) ctx.getAuthentication().getPrincipal();
+        String jti = UUID.randomUUID().toString();
         String jwt = jwtIssuer.issueForService(
                 p.uid(),
                 p.username(),
-                p.tenant(),
+                jti,
                 p.roles(),
-                null,
+                p.perms(),
                 targetService
         );
+
         return "Bearer " + jwt;
     }
 

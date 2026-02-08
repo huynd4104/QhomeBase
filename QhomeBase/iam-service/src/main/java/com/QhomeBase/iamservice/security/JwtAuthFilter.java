@@ -1,5 +1,6 @@
 package com.QhomeBase.iamservice.security;
 
+import com.QhomeBase.iamservice.service.token.TokenBlacklistService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
@@ -25,7 +26,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 
     private final JwtVerifier jwtVerifier;
-
+    private final TokenBlacklistService tokenBlacklistService;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String auth = request.getHeader("Authorization");
@@ -33,12 +34,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 String token = auth.substring(7);
                 Claims claims = jwtVerifier.verify(token);
-                
 
+                String jti = claims.getId();
+                if (jti == null) {
+                    throw new IllegalStateException("Missing jti");
+                }
+                if (tokenBlacklistService.isBlacklisted(jti)) {
+                    throw new SecurityException("Token revoked");
+                }
                 UUID uid = UUID.fromString(claims.get("uid", String.class));
                 String username = claims.getSubject();
                 Object tenantClaim = claims.get("tenant");
-                UUID tenant = tenantClaim != null ? UUID.fromString(tenantClaim.toString()) : null;
                 @SuppressWarnings("unchecked")
                 List<String> roles = claims.get("roles", List.class);
                 @SuppressWarnings("unchecked")
@@ -59,7 +65,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     }
                 }
                 
-                var principal = new UserPrincipal(uid, username, tenant, roles != null ? roles : new ArrayList<>(), perms != null ? perms : new ArrayList<>(), token);
+                var principal = new UserPrincipal(uid, username, jti, roles != null ? roles : new ArrayList<>(), perms != null ? perms : new ArrayList<>(), token);
                 var authn = new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authn);
             }

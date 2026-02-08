@@ -6,7 +6,7 @@ import java.util.UUID;
 public record UserPrincipal(
         UUID uid,
         String username,
-        UUID tenant,
+        String jti,
         List<String> roles,
         List<String> perms,
         String token

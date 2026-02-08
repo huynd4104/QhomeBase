@@ -36,7 +36,7 @@ public class JwtIssuer {
     }
     public String issueForService ( UUID uid,
                                     String username,
-                                    @Nullable UUID tenantId,
+                                    String jti,
                                     List<String> roles,
                                     List<String> perms,
                                     String audiences) {
@@ -47,9 +47,6 @@ public class JwtIssuer {
                 .setExpiration(new Date(System.currentTimeMillis() + ttlMinutes*60*1000))
                 .setAudience(audiences)
                 .claim("uid", uid.toString());
-        if (tenantId != null) {
-            builder.claim("tenant", tenantId.toString());
-        }
         builder.claim("roles", new ArrayList<>(roles));
         builder.claim("perms", new ArrayList<>(perms));
         return builder.signWith(key, SignatureAlgorithm.HS256).compact();
