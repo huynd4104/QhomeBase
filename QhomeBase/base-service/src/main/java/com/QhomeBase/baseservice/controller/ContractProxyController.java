@@ -51,8 +51,7 @@ public class ContractProxyController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ContractDetailDto> createContract(
             @RequestBody @Valid CreateContractProxyRequest request,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         UUID userId = null;
         if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal) {
             userId = principal.uid();
@@ -69,8 +68,7 @@ public class ContractProxyController {
                 request.paymentTerms(),
                 request.purchaseDate(),
                 request.notes(),
-                "ACTIVE"
-        );
+                "ACTIVE");
 
         ContractDetailDto contract = contractClient.createContract(normalizedRequest, userId);
         return ResponseEntity.status(201).body(contract);
@@ -81,26 +79,24 @@ public class ContractProxyController {
     public ResponseEntity<List<com.QhomeBase.baseservice.dto.ContractFileDto>> uploadContractFiles(
             @PathVariable UUID contractId,
             @RequestPart("files") MultipartFile[] files,
-            Authentication authentication
-    ) {
+            Authentication authentication) {
         UUID userId = null;
         if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal) {
             userId = principal.uid();
         }
 
-        List<com.QhomeBase.baseservice.dto.ContractFileDto> uploaded = contractClient.uploadContractFiles(contractId, files, userId);
+        List<com.QhomeBase.baseservice.dto.ContractFileDto> uploaded = contractClient.uploadContractFiles(contractId,
+                files, userId);
         return ResponseEntity.ok(uploaded);
     }
 
     @GetMapping("/{contractId}/files/{fileId}/view")
     public ResponseEntity<byte[]> viewContractFile(
             @PathVariable UUID contractId,
-            @PathVariable UUID fileId
-    ) {
+            @PathVariable UUID fileId) {
         ResponseEntity<byte[]> response = contractClient.viewContractFile(contractId, fileId);
         return ResponseEntity.status(response.getStatusCode())
                 .headers(response.getHeaders())
                 .body(response.getBody());
     }
 }
-

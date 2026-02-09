@@ -139,6 +139,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -157,7 +163,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>11.7.2</version>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5432/qhome_base_db?currentSchema=svc,data,public</url>
+                    <url>jdbc:postgresql://localhost:5432/qhome_new?currentSchema=svc,data,public</url>
                     <user>postgres</user>
                     <password>postgres</password>
                     <schemas>

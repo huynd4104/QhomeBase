@@ -2,8 +2,8 @@ package com.QhomeBase.assetmaintenanceservice.client;
 
 import com.QhomeBase.assetmaintenanceservice.client.dto.BuildingDto;
 import com.QhomeBase.assetmaintenanceservice.client.dto.UnitDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,11 +12,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class BaseServiceClient {
 
     private final WebClient baseServiceWebClient;
+
+    public BaseServiceClient(@Qualifier("baseServiceWebClient") WebClient baseServiceWebClient) {
+        this.baseServiceWebClient = baseServiceWebClient;
+    }
 
     public List<BuildingDto> getAllBuildings() {
         try {
@@ -24,7 +27,8 @@ public class BaseServiceClient {
                     .get()
                     .uri("/api/buildings")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<BuildingDto>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<BuildingDto>>() {
+                    })
                     .block();
         } catch (Exception e) {
             log.error("Error calling base service to get all buildings: {}", e.getMessage(), e);
@@ -52,7 +56,8 @@ public class BaseServiceClient {
                     .get()
                     .uri("/api/units/building/{buildingId}", buildingId)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<UnitDto>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<UnitDto>>() {
+                    })
                     .block();
         } catch (Exception e) {
             log.error("Error calling base service to get units by building ID {}: {}", buildingId, e.getMessage(), e);
@@ -80,12 +85,14 @@ public class BaseServiceClient {
                     .get()
                     .uri("/api/units/building/{buildingId}/floor/{floor}", buildingId, floor)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<UnitDto>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<List<UnitDto>>() {
+                    })
                     .block();
         } catch (Exception e) {
-            log.error("Error calling base service to get units by building ID {} and floor {}: {}", 
+            log.error("Error calling base service to get units by building ID {} and floor {}: {}",
                     buildingId, floor, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch units from base service for building: " + buildingId + " floor: " + floor, e);
+            throw new RuntimeException(
+                    "Failed to fetch units from base service for building: " + buildingId + " floor: " + floor, e);
         }
     }
 
@@ -167,7 +174,8 @@ public class BaseServiceClient {
                     .get()
                     .uri("/api/residents/{residentId}/units", residentId)
                     .retrieve()
-                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<java.util.List<UnitDto>>() {})
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<java.util.List<UnitDto>>() {
+                    })
                     .block();
         } catch (Exception e) {
             log.error("Error calling base service to get units by resident ID {}: {}", residentId, e.getMessage(), e);
@@ -175,4 +183,3 @@ public class BaseServiceClient {
         }
     }
 }
-

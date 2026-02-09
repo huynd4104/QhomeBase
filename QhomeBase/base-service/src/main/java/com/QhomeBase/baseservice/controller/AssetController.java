@@ -2,6 +2,7 @@ package com.QhomeBase.baseservice.controller;
 
 import com.QhomeBase.baseservice.dto.AssetDto;
 import com.QhomeBase.baseservice.model.AssetType;
+import com.QhomeBase.baseservice.model.RoomType;
 import com.QhomeBase.baseservice.service.AssetService;
 import com.QhomeBase.baseservice.service.exports.AssetExportService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -37,8 +39,22 @@ public class AssetController {
     }
 
     @GetMapping("/unit/{unitId}")
-    public ResponseEntity<List<AssetDto>> getAssetsByUnit(@PathVariable UUID unitId) {
-        List<AssetDto> result = assetService.getAssetsByUnitId(unitId);
+    public ResponseEntity<List<AssetDto>> getAssetsByUnit(
+            @PathVariable UUID unitId,
+            @RequestParam(required = false) RoomType roomType) {
+        List<AssetDto> result;
+        if (roomType != null) {
+            result = assetService.getAssetsByUnitIdAndRoomType(unitId, roomType);
+        } else {
+            result = assetService.getAssetsByUnitId(unitId);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/unit/{unitId}/grouped-by-room")
+    public ResponseEntity<Map<RoomType, List<AssetDto>>> getAssetsByUnitGroupedByRoom(
+            @PathVariable UUID unitId) {
+        Map<RoomType, List<AssetDto>> result = assetService.getAssetsByUnitIdGroupedByRoom(unitId);
         return ResponseEntity.ok(result);
     }
 
@@ -87,10 +103,10 @@ public class AssetController {
             @RequestParam(required = false) String assetType) {
         try {
             byte[] bytes = assetExportService.exportAssetsToExcel(buildingId, unitId, assetType);
-            
-            String filename = String.format("danh_sach_thiet_bi_%s.xlsx", 
+
+            String filename = String.format("danh_sach_thiet_bi_%s.xlsx",
                     java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")));
-            
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -101,5 +117,3 @@ public class AssetController {
         }
     }
 }
-
-
