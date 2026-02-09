@@ -1,2 +1,0 @@
-ALTER TABLE data.tenants
-DROP COLUMN IF EXISTS version;
