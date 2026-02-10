@@ -3,6 +3,7 @@ package com.QhomeBase.baseservice.service;
 import com.QhomeBase.baseservice.dto.AssetDto;
 import com.QhomeBase.baseservice.model.Asset;
 import com.QhomeBase.baseservice.model.AssetType;
+import com.QhomeBase.baseservice.model.RoomType;
 import com.QhomeBase.baseservice.model.Unit;
 import com.QhomeBase.baseservice.repository.AssetRepository;
 import com.QhomeBase.baseservice.repository.UnitRepository;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,20 @@ public class AssetService {
     }
 
     @Transactional(readOnly = true)
+    public List<AssetDto> getAssetsByUnitIdAndRoomType(UUID unitId, RoomType roomType) {
+        return assetRepository.findByUnitIdAndRoomType(unitId, roomType).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<RoomType, List<AssetDto>> getAssetsByUnitIdGroupedByRoom(UUID unitId) {
+        return assetRepository.findByUnitIdAndActiveTrue(unitId).stream()
+                .map(this::toDto)
+                .collect(Collectors.groupingBy(AssetDto::roomType));
+    }
+
+    @Transactional(readOnly = true)
     public AssetDto getAssetById(UUID id) {
         Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + id));
@@ -71,6 +87,7 @@ public class AssetService {
         Asset asset = Asset.builder()
                 .unit(unit)
                 .assetType(req.assetType())
+                .roomType(req.roomType())
                 .assetCode(req.assetCode())
                 .name(req.name())
                 .active(req.active() != null ? req.active() : true)
@@ -95,10 +112,14 @@ public class AssetService {
             asset.setAssetCode(req.assetCode());
         }
 
-        if (req.name() != null) asset.setName(req.name());
-        if (req.active() != null) asset.setActive(req.active());
-        if (req.installedAt() != null) asset.setInstalledAt(req.installedAt());
-        if (req.purchasePrice() != null) asset.setPurchasePrice(req.purchasePrice());
+        if (req.name() != null)
+            asset.setName(req.name());
+        if (req.active() != null)
+            asset.setActive(req.active());
+        if (req.installedAt() != null)
+            asset.setInstalledAt(req.installedAt());
+        if (req.purchasePrice() != null)
+            asset.setPurchasePrice(req.purchasePrice());
 
         Asset updated = assetRepository.save(asset);
         log.info("Updated asset: {}", updated.getId());
@@ -126,9 +147,11 @@ public class AssetService {
 
     private AssetDto toDto(Asset asset) {
         UUID buildingId = asset.getUnit() != null && asset.getUnit().getBuilding() != null
-                ? asset.getUnit().getBuilding().getId() : null;
+                ? asset.getUnit().getBuilding().getId()
+                : null;
         String buildingCode = asset.getUnit() != null && asset.getUnit().getBuilding() != null
-                ? asset.getUnit().getBuilding().getCode() : null;
+                ? asset.getUnit().getBuilding().getCode()
+                : null;
 
         return new AssetDto(
                 asset.getId(),
@@ -138,6 +161,7 @@ public class AssetService {
                 asset.getUnit() != null ? asset.getUnit().getCode() : null,
                 asset.getUnit() != null ? asset.getUnit().getFloor() : null,
                 asset.getAssetType(),
+                asset.getRoomType(),
                 asset.getAssetCode(),
                 asset.getName(),
                 asset.getBrand(),
@@ -151,27 +175,25 @@ public class AssetService {
                 asset.getPurchasePrice(),
                 asset.getPurchaseDate(),
                 asset.getCreatedAt(),
-                asset.getUpdatedAt()
-        );
+                asset.getUpdatedAt());
     }
 
     public record CreateAssetRequest(
             UUID unitId,
             AssetType assetType,
+            RoomType roomType,
             String assetCode,
             String name,
             Boolean active,
             LocalDate installedAt,
-            java.math.BigDecimal purchasePrice
-    ) {}
+            java.math.BigDecimal purchasePrice) {
+    }
 
     public record UpdateAssetRequest(
             String assetCode,
             String name,
             Boolean active,
             LocalDate installedAt,
-            java.math.BigDecimal purchasePrice
-    ) {}
+            java.math.BigDecimal purchasePrice) {
+    }
 }
-
-

@@ -12,8 +12,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "assets", schema = "data",
-       uniqueConstraints = @UniqueConstraint(name = "uq_asset_code", columnNames = {"asset_code"}))
+@Table(name = "assets", schema = "data", uniqueConstraints = @UniqueConstraint(name = "uq_asset_code", columnNames = {
+        "asset_code" }))
 @Getter
 @Setter
 @Builder
@@ -33,6 +33,11 @@ public class Asset {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "asset_type", nullable = false)
     private AssetType assetType;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "room_type", nullable = false)
+    private RoomType roomType;
 
     @Column(name = "asset_code", nullable = false, unique = true)
     private String assetCode;
@@ -79,5 +84,3 @@ public class Asset {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 }
-
-

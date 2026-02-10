@@ -1,6 +1,7 @@
 package com.QhomeBase.baseservice.dto;
 
 import com.QhomeBase.baseservice.model.AssetType;
+import com.QhomeBase.baseservice.model.RoomType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ public record AssetDto(
         String unitCode,
         Integer floor,
         AssetType assetType,
+        RoomType roomType,
         String assetCode,
         String name,
         String brand,
@@ -28,7 +30,5 @@ public record AssetDto(
         BigDecimal purchasePrice,
         LocalDate purchaseDate,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
-) {}
-
-
+        OffsetDateTime updatedAt) {
+}
