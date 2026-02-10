@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class UserService {
 
     private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(

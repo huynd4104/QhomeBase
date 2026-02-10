@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class UserController {
 
     private final UserRepository userRepository;
