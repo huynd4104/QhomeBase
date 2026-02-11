@@ -35,6 +35,8 @@ public class AuthService {
     private final RolePermissionRepository rolePermissionRepository;
     private final PermissionRepository permissionRepository;
     private final TokenBlacklistService tokenBlacklistService;
+    private final UserService userService; // Inject UserService
+
     public void putIntoBlackList(String accessToken) {
         Claims claims = jwtVerifier.verify(accessToken);
 
@@ -47,6 +49,7 @@ public class AuthService {
             tokenBlacklistService.blacklist(jti, ttlSeconds);
         }
     }
+
     @Transactional
     public LoginResponseDto login(LoginRequestDto loginRequestDto) {
         // Tìm kiếm người dùng bằng username, email hoặc số điện thoại
@@ -54,15 +57,18 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + loginRequestDto.username()));
 
         log.debug("Found user id={} active={} locked={} failedAttempts={} for username={}",
-                user.getId(), user.isActive(), user.isAccountLocked(), user.getFailedLoginAttempts(), loginRequestDto.username());
+                user.getId(), user.isActive(), user.isAccountLocked(), user.getFailedLoginAttempts(),
+                loginRequestDto.username());
 
-        // Kiểm tra mật khẩu (hỗ trợ cả so sánh hash và so sánh trực tiếp cho môi trường dev/test)
+        // Kiểm tra mật khẩu (hỗ trợ cả so sánh hash và so sánh trực tiếp cho môi trường
+        // dev/test)
         boolean passwordMatches = passwordEncoder.matches(loginRequestDto.password(), user.getPasswordHash())
                 || loginRequestDto.password().equals(user.getPasswordHash());
 
         if (!passwordMatches) {
             handleFailedLogin(user);
-            log.warn("Password mismatch for user={} (failedAttempts={})", user.getUsername(), user.getFailedLoginAttempts());
+            log.warn("Password mismatch for user={} (failedAttempts={})", user.getUsername(),
+                    user.getFailedLoginAttempts());
             throw new IllegalArgumentException("Password mismatch for user: " + loginRequestDto.username());
         }
 
@@ -108,8 +114,7 @@ public class AuthService {
                 jti,
                 roleNames,
                 userPermissions,
-                "base-service,finance-service,customer-service,asset-maintenance-service,iam-service"
-        ).trim();
+                "base-service,finance-service,customer-service,asset-maintenance-service,iam-service").trim();
 
         return new LoginResponseDto(
                 accessToken,
@@ -120,11 +125,9 @@ public class AuthService {
                         user.getId().toString(),
                         user.getUsername(),
                         user.getEmail(),
-                        user.getPhone(),
+                        userService.getPhone(user.getId()), // Use userService to get phone
                         roleNames,
-                        userPermissions
-                )
-        );
+                        userPermissions));
     }
 
     private List<String> getUserPermissions(List<UserRole> userRoles) {

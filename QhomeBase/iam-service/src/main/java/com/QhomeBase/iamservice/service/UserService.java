@@ -1,13 +1,13 @@
 package com.QhomeBase.iamservice.service;
 
 import com.QhomeBase.iamservice.dto.UserAccountDto;
+import com.QhomeBase.iamservice.model.StaffProfile;
 import com.QhomeBase.iamservice.model.User;
 import com.QhomeBase.iamservice.model.UserRole;
+import com.QhomeBase.iamservice.repository.StaffProfileRepository;
 import com.QhomeBase.iamservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,17 +18,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class UserService {
 
     private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
             "^(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
 
     public final UserRepository userRepository;
+    private final StaffProfileRepository staffProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
@@ -181,22 +182,26 @@ public class UserService {
     public List<UserAccountDto> findStaffAccountDtos() {
         return findStaffWithRoles()
                 .stream()
-                .map(this::toAccountDto)
+                .map(this::mapToUserAccountDto)
                 .toList();
     }
 
-    private UserAccountDto toAccountDto(User user) {
+    public UserAccountDto mapToUserAccountDto(User user) {
+        StaffProfile profile = staffProfileRepository.findByUserId(user.getId()).orElse(null);
         return new UserAccountDto(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRoles() != null
                         ? user.getRoles().stream()
-                        .map(UserRole::getRoleName)
-                        .toList()
+                                .map(UserRole::getRoleName)
+                                .toList()
                         : List.of(),
-                user.isActive()
-        );
+                user.isActive(),
+                profile != null ? profile.getFullName() : null,
+                profile != null ? profile.getPhone() : null,
+                profile != null ? profile.getNationalId() : null,
+                profile != null ? profile.getAddress() : null);
     }
 
     @Transactional(readOnly = true)
@@ -224,7 +229,8 @@ public class UserService {
     }
 
     @Transactional
-    public User createStaffAccount(String username, String email, List<UserRole> roles, boolean active) {
+    public User createStaffAccount(String username, String email, List<UserRole> roles, boolean active,
+            String fullName, String phone, String nationalId, String address) {
         if (!StringUtils.hasText(username)) {
             throw new IllegalArgumentException("Username cannot be empty");
         }
@@ -261,8 +267,20 @@ public class UserService {
                 .active(active)
                 .build();
         roles.forEach(user::addRole);
+        roles.forEach(user::addRole);
         User saved = userRepository.save(user);
         log.info("Created staff user account {} with roles {}", saved.getId(), roles);
+
+        // Create StaffProfile
+        StaffProfile profile = StaffProfile.builder()
+                .user(saved)
+                .fullName(fullName)
+                .phone(phone)
+                .nationalId(nationalId)
+                .address(address)
+                .build();
+        staffProfileRepository.save(profile);
+
         try {
             emailService.sendStaffAccountCredentials(trimmedEmail, trimmedUsername, rawPassword);
         } catch (MailException mailException) {
@@ -278,7 +296,11 @@ public class UserService {
             String email,
             Boolean active,
             String newPassword,
-            List<UserRole> roles) {
+            List<UserRole> roles,
+            String fullName,
+            String phone,
+            String nationalId,
+            String address) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         initializeRoles(user);
@@ -331,6 +353,32 @@ public class UserService {
         }
 
         User saved = userRepository.save(user);
+
+        // Update StaffProfile
+        Optional<StaffProfile> profileOpt = staffProfileRepository.findByUserId(userId);
+        StaffProfile profile;
+        if (profileOpt.isPresent()) {
+            profile = profileOpt.get();
+            if (fullName != null)
+                profile.setFullName(fullName);
+            if (phone != null)
+                profile.setPhone(phone);
+            if (nationalId != null)
+                profile.setNationalId(nationalId);
+            if (address != null)
+                profile.setAddress(address);
+        } else {
+            // Create if missing (should not happen for valid staff but good fallback)
+            profile = StaffProfile.builder()
+                    .user(saved)
+                    .fullName(fullName != null ? fullName : "")
+                    .phone(phone)
+                    .nationalId(nationalId)
+                    .address(address)
+                    .build();
+        }
+        staffProfileRepository.save(profile);
+
         log.info("Updated staff user account {}", userId);
         return initializeRoles(saved);
     }
@@ -407,5 +455,11 @@ public class UserService {
         if (email.length() > 255) {
             throw new IllegalArgumentException("Email không được vượt quá 255 ký tự");
         }
+    }
+
+    public String getPhone(UUID userId) {
+        return staffProfileRepository.findByUserId(userId)
+                .map(StaffProfile::getPhone)
+                .orElse(null);
     }
 }

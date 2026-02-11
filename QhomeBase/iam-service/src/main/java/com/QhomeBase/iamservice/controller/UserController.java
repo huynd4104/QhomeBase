@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -75,7 +76,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
-                            user.getPhone(),
+                            userService.getPhone(user.getId()),
                             roleNames,
                             permissions);
                     return ResponseEntity.ok(userInfo);
@@ -139,7 +140,7 @@ public class UserController {
             User saved = userService.findUserWithRolesById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
-            return ResponseEntity.ok(toAccountDto(saved));
+            return ResponseEntity.ok(userService.mapToUserAccountDto(saved));
         } catch (IllegalArgumentException e) {
             log.warn("Failed to update user profile {}: {}", userId, e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -194,7 +195,7 @@ public class UserController {
                                 user.getId().toString(),
                                 user.getUsername(),
                                 user.getEmail(),
-                                user.getPhone(),
+                                userService.getPhone(user.getId()),
                                 roleNames,
                                 permissions);
                     })
@@ -261,14 +262,7 @@ public class UserController {
                 }
             }
 
-            UserAccountDto accountDto = new UserAccountDto(
-                    user.getId(),
-                    user.getUsername(),
-                    user.getEmail(),
-                    user.getRoles().stream()
-                            .map(UserRole::getRoleName)
-                            .collect(Collectors.toList()),
-                    user.isActive());
+            UserAccountDto accountDto = userService.mapToUserAccountDto(user);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(accountDto);
         } catch (IllegalArgumentException e) {
@@ -288,17 +282,7 @@ public class UserController {
     public ResponseEntity<UserAccountDto> getUserAccountInfo(@PathVariable UUID userId) {
         return userService.findUserWithRolesById(userId)
                 .map(user -> {
-                    // Force initialization of roles collection within transaction
-                    List<String> roleNames = user.getRoles().stream()
-                            .map(UserRole::getRoleName)
-                            .collect(Collectors.toList());
-
-                    UserAccountDto accountDto = new UserAccountDto(
-                            user.getId(),
-                            user.getUsername(),
-                            user.getEmail(),
-                            roleNames,
-                            user.isActive());
+                    UserAccountDto accountDto = userService.mapToUserAccountDto(user);
                     return ResponseEntity.ok(accountDto);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -329,7 +313,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
-                            user.getPhone(),
+                            userService.getPhone(user.getId()),
                             roleNames,
                             permissions);
                     return ResponseEntity.ok(userInfo);
@@ -362,7 +346,7 @@ public class UserController {
                             user.getId().toString(),
                             user.getUsername(),
                             user.getEmail(),
-                            user.getPhone(),
+                            userService.getPhone(user.getId()),
                             roleNames,
                             permissions);
                     return ResponseEntity.ok(userInfo);
@@ -379,9 +363,13 @@ public class UserController {
                     request.username(),
                     request.email(),
                     roles,
-                    request.active() == null || request.active());
-            baseServiceClient.syncStaffResident(user.getId(), request.username(), request.email(), null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(toAccountDto(user));
+                    request.active() == null || request.active(),
+                    request.fullName(),
+                    request.phone(),
+                    request.nationalId(),
+                    request.address());
+            baseServiceClient.syncStaffResident(user.getId(), request.username(), request.email(), request.phone());
+            return ResponseEntity.status(HttpStatus.CREATED).body(userService.mapToUserAccountDto(user));
         } catch (IllegalArgumentException e) {
             log.warn("Failed to create staff account: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -406,7 +394,6 @@ public class UserController {
 
         return ResponseEntity.ok(result);
     }
-
 
     @PostMapping(value = "/staff/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("@authz.canCreateUser()")
@@ -462,7 +449,7 @@ public class UserController {
             users = userService.findResidentAccounts();
         }
         List<UserAccountDto> residents = users.stream()
-                .map(this::toAccountDto)
+                .map(userService::mapToUserAccountDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(residents);
     }
@@ -471,7 +458,7 @@ public class UserController {
     @PreAuthorize("@authz.canViewUser(#userId)")
     public ResponseEntity<UserAccountDto> getStaffAccount(@PathVariable UUID userId) {
         return userService.findStaffWithRolesById(userId)
-                .map(this::toAccountDto)
+                .map(userService::mapToUserAccountDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -489,9 +476,14 @@ public class UserController {
                     request.email(),
                     request.active(),
                     request.newPassword(),
-                    roles);
-            baseServiceClient.syncStaffResident(updated.getId(), updated.getUsername(), updated.getEmail(), null);
-            return ResponseEntity.ok(toAccountDto(updated));
+                    roles,
+                    request.fullName(),
+                    request.phone(),
+                    request.nationalId(),
+                    request.address());
+            baseServiceClient.syncStaffResident(updated.getId(), updated.getUsername(), updated.getEmail(),
+                    request.phone());
+            return ResponseEntity.ok(userService.mapToUserAccountDto(updated));
         } catch (IllegalArgumentException e) {
             log.warn("Failed to update staff account {}: {}", userId, e.getMessage());
             return ResponseEntity.badRequest().build();
@@ -572,7 +564,11 @@ public class UserController {
             @NotBlank(message = "Username is required") @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters") String username,
             @NotBlank(message = "Email is required") @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com") String email,
             @NotEmpty(message = "Staff roles are required") List<@NotBlank(message = "Role value cannot be blank") String> roles,
-            Boolean active) {
+            Boolean active,
+            @NotBlank(message = "Full name is required") String fullName,
+            String phone,
+            String nationalId,
+            String address) {
     }
 
     public record UpdateStaffRequest(
@@ -580,21 +576,11 @@ public class UserController {
             @NotBlank(message = "Email is required") @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com") String email,
             Boolean active,
             List<@NotBlank(message = "Role value cannot be blank") String> roles,
-            @Size(min = 8, message = "New password must be at least 8 characters") String newPassword) {
-    }
-
-    private UserAccountDto toAccountDto(User user) {
-        List<String> roleNames = user.getRoles() != null
-                ? user.getRoles().stream()
-                        .map(UserRole::getRoleName)
-                        .collect(Collectors.toList())
-                : List.of();
-        return new UserAccountDto(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                roleNames,
-                user.isActive());
+            @Size(min = 8, message = "New password must be at least 8 characters") String newPassword,
+            String fullName,
+            String phone,
+            String nationalId,
+            String address) {
     }
 
     private List<UserRole> parseStaffRoles(List<String> roles) {

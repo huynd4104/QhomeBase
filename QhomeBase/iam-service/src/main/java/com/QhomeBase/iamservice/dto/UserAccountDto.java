@@ -9,7 +9,10 @@ public record UserAccountDto(
         String username,
         String email,
         List<String> roles,
-        boolean active
-) implements Serializable {
+        boolean active,
+        String fullName,
+        String phone,
+        String nationalId,
+        String address) implements Serializable {
     private static final long serialVersionUID = 1L;
 }
