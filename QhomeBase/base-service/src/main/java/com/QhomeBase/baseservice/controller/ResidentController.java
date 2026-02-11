@@ -340,14 +340,17 @@ public class ResidentController {
 
     @GetMapping("/user-ids-by-building/{buildingId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORTER')")
-    public ResponseEntity<List<UUID>> getResidentUserIdsByBuilding(@PathVariable UUID buildingId) {
+    public ResponseEntity<List<UUID>> getResidentUserIdsByBuilding(
+            @PathVariable UUID buildingId,
+            @RequestParam(required = false) Integer floor) {
         try {
-            log.info("Fetching resident user IDs for building: {}", buildingId);
-            List<UUID> userIds = residentService.findUserIdsByBuildingId(buildingId);
-            log.info("Found {} resident user IDs for building {}", userIds.size(), buildingId);
+            log.info("Fetching resident user IDs for building: {}, floor: {}", buildingId, floor);
+            List<UUID> userIds = residentService.findUserIdsByBuildingIdAndFloor(buildingId, floor);
+            log.info("Found {} resident user IDs for building {}, floor {}", userIds.size(), buildingId, floor);
             return ResponseEntity.ok(userIds);
         } catch (Exception e) {
-            log.error("Failed to get resident user IDs by building {}: {}", buildingId, e.getMessage(), e);
+            log.error("Failed to get resident user IDs by building {}, floor {}: {}", buildingId, floor, e.getMessage(),
+                    e);
             return ResponseEntity.ok(List.of());
         }
     }

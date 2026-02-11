@@ -440,10 +440,11 @@ public class UserController {
     @GetMapping("/residents")
     @PreAuthorize("@authz.canViewAllUsers()")
     public ResponseEntity<List<UserAccountDto>> listResidentAccounts(
-            @RequestParam(required = false) UUID buildingId) {
+            @RequestParam(required = false) UUID buildingId,
+            @RequestParam(required = false) Integer floor) {
         List<User> users;
         if (buildingId != null) {
-            List<UUID> userIds = baseServiceClient.getResidentUserIdsByBuilding(buildingId);
+            List<UUID> userIds = baseServiceClient.getResidentUserIdsByBuilding(buildingId, floor);
             users = userService.findResidentAccountsByUserIds(userIds);
         } else {
             users = userService.findResidentAccounts();

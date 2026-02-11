@@ -39,6 +39,16 @@ public class ResidentService {
         return residentRepository.findUserIdsByBuildingId(buildingId);
     }
 
+    public List<UUID> findUserIdsByBuildingIdAndFloor(UUID buildingId, Integer floor) {
+        if (buildingId == null) {
+            return Collections.emptyList();
+        }
+        if (floor == null) {
+            return residentRepository.findUserIdsByBuildingId(buildingId);
+        }
+        return residentRepository.findUserIdsByBuildingIdAndFloor(buildingId, floor);
+    }
+
     public List<ResidentDto> findAllByStatus(ResidentStatus status) {
         if (status == null) {
             return findAll();

@@ -47,14 +47,20 @@ public class BaseServiceClient {
         }
     }
 
-    public List<UUID> getResidentUserIdsByBuilding(UUID buildingId) {
+    public List<UUID> getResidentUserIdsByBuilding(UUID buildingId, Integer floor) {
         if (buildingId == null) {
             return List.of();
         }
         try {
             return baseServiceWebClient
                     .get()
-                    .uri("/api/residents/user-ids-by-building/{buildingId}", buildingId)
+                    .uri(uriBuilder -> {
+                        uriBuilder.path("/api/residents/user-ids-by-building/{buildingId}");
+                        if (floor != null) {
+                            uriBuilder.queryParam("floor", floor);
+                        }
+                        return uriBuilder.build(buildingId);
+                    })
                     .headers(headers -> {
                         String token = extractToken();
                         if (token != null) {
@@ -66,7 +72,8 @@ public class BaseServiceClient {
                     })
                     .block();
         } catch (Exception e) {
-            log.error("Error fetching resident user IDs by building {}: {}", buildingId, e.getMessage());
+            log.error("Error fetching resident user IDs by building {}, floor {}: {}", buildingId, floor,
+                    e.getMessage());
             return List.of();
         }
     }

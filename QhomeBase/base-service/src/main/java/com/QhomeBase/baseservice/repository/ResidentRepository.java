@@ -58,4 +58,20 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
             AND (h.end_date IS NULL OR h.end_date > CURRENT_DATE)
             """, nativeQuery = true)
     List<UUID> findUserIdsByBuildingId(@Param("buildingId") UUID buildingId);
+
+    @Query(value = """
+            SELECT DISTINCT r.user_id
+            FROM data.residents r
+            INNER JOIN data.household_members hm ON hm.resident_id = r.id
+            INNER JOIN data.households h ON h.id = hm.household_id
+            INNER JOIN data.units u ON u.id = h.unit_id
+            WHERE u.building_id = :buildingId
+            AND u.floor = :floor
+            AND r.user_id IS NOT NULL
+            AND (hm.left_at IS NULL OR hm.left_at > CURRENT_DATE)
+            AND (h.end_date IS NULL OR h.end_date > CURRENT_DATE)
+            """, nativeQuery = true)
+    List<UUID> findUserIdsByBuildingIdAndFloor(
+            @Param("buildingId") UUID buildingId,
+            @Param("floor") Integer floor);
 }
