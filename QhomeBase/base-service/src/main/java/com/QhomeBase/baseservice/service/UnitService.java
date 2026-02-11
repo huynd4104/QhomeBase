@@ -10,6 +10,7 @@ import com.QhomeBase.baseservice.model.Unit;
 import com.QhomeBase.baseservice.model.UnitStatus;
 import com.QhomeBase.baseservice.repository.UnitRepository;
 import com.QhomeBase.baseservice.repository.BuildingRepository;
+import com.QhomeBase.baseservice.client.ContractClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +18,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UnitService {
+    /** Maximum number of units allowed per floor in a building. */
+    public static final int MAX_UNITS_PER_FLOOR = 5;
+
     private final UnitRepository unitRepository;
     private final BuildingRepository buildingRepository;
-    
+    private final ContractClient contractClient;
+
     private OffsetDateTime nowUTC() {
         return OffsetDateTime.now(ZoneOffset.UTC);
     }
@@ -33,7 +39,8 @@ public class UnitService {
     @Transactional
     public UnitDto createUnit(UnitCreateDto unitCreateDto) {
         validateUnitCreateDto(unitCreateDto);
-        
+        validateMaxUnitsPerFloor(unitCreateDto.buildingId(), unitCreateDto.floor());
+
         String generatedCode = generateNextCode(unitCreateDto.buildingId(), unitCreateDto.floor());
         var unit = Unit.builder()
                 .building(buildingRepository.findById(unitCreateDto.buildingId()).orElseThrow())
@@ -57,7 +64,10 @@ public class UnitService {
         }
         validateUnitUpdateDto(unit, id);
 
-        if (unit.floor() != null) {
+        if (unit.floor() != null && !unit.floor().equals(existingUnit.getFloor())) {
+            validateMaxUnitsPerFloor(existingUnit.getBuilding().getId(), unit.floor());
+            existingUnit.setFloor(unit.floor());
+        } else if (unit.floor() != null) {
             existingUnit.setFloor(unit.floor());
         }
         if (unit.areaM2() != null) {
@@ -110,13 +120,21 @@ public class UnitService {
     public void changeUnitStatus(UUID id, UnitStatus newStatus) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow();
-        
+
+        if (newStatus == UnitStatus.INACTIVE) {
+            List<?> activeContracts = contractClient.getActiveContractsByUnit(id);
+            if (activeContracts != null && !activeContracts.isEmpty()) {
+                throw new IllegalStateException(
+                        "Căn hộ đang có hợp đồng thuê/mua còn hiệu lực. Vui lòng kết thúc hợp đồng trước khi ngừng hoạt động căn hộ.");
+            }
+        }
+
         unit.setStatus(newStatus);
         unit.setUpdatedAt(nowUTC());
-        
+
         unitRepository.save(unit);
     }
-    
+
     public String getPrefix(UUID buildingId) {
         var building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new IllegalArgumentException("Building not found: " + buildingId));
@@ -339,6 +357,19 @@ public class UnitService {
             if (dto.bedrooms() != Math.floor(dto.bedrooms())) {
                 throw new IllegalArgumentException("Bedrooms must be an integer");
             }
+        }
+    }
+
+    /**
+     * Validates that the given floor in the building has not reached the maximum number of units.
+     * @throws IllegalArgumentException if the floor already has {@value #MAX_UNITS_PER_FLOOR} or more units
+     */
+    private void validateMaxUnitsPerFloor(UUID buildingId, int floorNumber) {
+        long count = unitRepository.countByBuildingIdAndFloorNumber(buildingId, Integer.valueOf(floorNumber));
+        if (count >= MAX_UNITS_PER_FLOOR) {
+            throw new IllegalArgumentException(
+                    String.format("Tầng %d đã đủ tối đa %d căn hộ. Không thể thêm căn hộ mới trên tầng này.",
+                            floorNumber, MAX_UNITS_PER_FLOOR));
         }
     }
 }

@@ -89,12 +89,14 @@ public class UnitController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("@authz.canManageUnitStatus(#id)")
-    public ResponseEntity<Void> changeUnitStatus(@PathVariable UUID id, @RequestParam UnitStatus status) {
+    public ResponseEntity<?> changeUnitStatus(@PathVariable UUID id, @RequestParam UnitStatus status) {
         try {
             unitService.changeUnitStatus(id, status);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 }

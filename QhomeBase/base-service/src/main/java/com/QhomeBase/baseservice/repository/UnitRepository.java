@@ -15,7 +15,10 @@ public interface UnitRepository extends JpaRepository<Unit, UUID> {
 
     @Query("SELECT u FROM Unit u JOIN FETCH u.building WHERE u.building.id = :buildingId AND u.floor = :floorNumber")
     List<Unit> findByBuildingIdAndFloorNumber(@Param("buildingId") UUID buildingId, @Param("floorNumber") int floorNumber);
-    
+
+    @Query("SELECT COUNT(u) FROM Unit u WHERE u.building.id = :buildingId AND u.floor = :floorNumber")
+    long countByBuildingIdAndFloorNumber(@Param("buildingId") UUID buildingId, @Param("floorNumber") Integer floorNumber);
+
     @Query("SELECT u FROM Unit u JOIN FETCH u.building WHERE u.id = :id")
     Unit findByIdWithBuilding(@Param("id") UUID id);
 
