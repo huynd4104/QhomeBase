@@ -48,7 +48,8 @@ public class BuildingService {
                 .collect(Collectors.toList());
     }
 
-    // NOTE: ép sắp xếp code ASC khi client không gửi sort để giữ thứ tự toàn cục trước khi phân trang.
+    // NOTE: ép sắp xếp code ASC khi client không gửi sort để giữ thứ tự toàn cục
+    // trước khi phân trang.
     public Page<Building> findAllOrderByCodeAsc(Pageable pageable) {
         Pageable sortedPageable = pageable;
         if (pageable == null || pageable.getSort().isUnsorted()) {
@@ -136,8 +137,9 @@ public class BuildingService {
                 building.getNumberOfFloors(),
                 0,
                 0,
-                building.getStatus()
-        );
+                building.getStatus(),
+                building.getCreatedAt() != null ? building.getCreatedAt().toString() : null,
+                building.getCreatedBy());
     }
 
     public BuildingDto createBuilding(BuildingCreateReq req, String createdBy) {
@@ -185,7 +187,8 @@ public class BuildingService {
         respo.save(building);
 
         // When building status changes to INACTIVE, set all units to INACTIVE
-        // When building status changes to ACTIVE, do nothing (keep units' current status)
+        // When building status changes to ACTIVE, do nothing (keep units' current
+        // status)
         if (newStatus == BuildingStatus.INACTIVE) {
             List<Unit> units = unitRepository.findAllByBuildingId(buildingId);
             boolean changed = false;
