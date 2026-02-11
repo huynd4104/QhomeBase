@@ -64,8 +64,6 @@ public class ServiceController {
                 service.getDescription(),
                 service.getDisplayOrder(),
                 service.getCreatedAt(),
-                service.getUpdatedAt()
-        );
+                service.getUpdatedAt());
     }
 }
-

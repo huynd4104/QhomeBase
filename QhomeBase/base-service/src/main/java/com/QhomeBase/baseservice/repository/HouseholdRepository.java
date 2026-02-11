@@ -1,6 +1,7 @@
 package com.QhomeBase.baseservice.repository;
 
 import com.QhomeBase.baseservice.model.Household;
+import com.QhomeBase.baseservice.model.HouseholdKind;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,6 +25,8 @@ public interface HouseholdRepository extends JpaRepository<Household, UUID> {
 
         @Query("SELECT h FROM Household h WHERE h.unitId = :unitId AND (h.endDate IS NULL OR h.endDate >= CURRENT_DATE)")
         List<Household> findCurrentByUnitId(@Param("unitId") UUID unitId);
+
+        List<Household> findByUnitIdAndKind(UUID unitId, HouseholdKind kind);
 
         // Batch query to get all current households for multiple units at once
         // This eliminates N+1 query problem when loading units with their households

@@ -76,4 +76,6 @@ public interface HouseholdMemberRepository extends JpaRepository<HouseholdMember
 
        boolean existsByHouseholdIdAndResidentId(UUID householdId, UUID residentId);
 
+       Optional<HouseholdMember> findByHouseholdIdAndResidentId(UUID householdId, UUID residentId);
+
 }

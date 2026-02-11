@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -169,19 +170,65 @@ public class ResidentViewService {
 
     public byte[] downloadTemplate() {
         try (Workbook workbook = new XSSFWorkbook()) {
-            // README Sheet
-            Sheet readme = workbook.createSheet("README");
-            Row row0 = readme.createRow(0);
-            row0.createCell(0).setCellValue("Resident Import Template Instructions");
-            Row row1 = readme.createRow(1);
-            row1.createCell(0).setCellValue("1. Fill in the 'Residents' sheet with data.");
-            Row row2 = readme.createRow(2);
-            row2.createCell(0).setCellValue("2. 'Building Code' and 'Unit Code' must match existing system codes.");
-            Row row3 = readme.createRow(3);
-            row3.createCell(0).setCellValue("3. 'Phone' and 'National ID' must be unique.");
-            Row row4 = readme.createRow(4);
-            row4.createCell(0).setCellValue("4. Dates should be in yyyy-mm-dd format.");
-            readme.autoSizeColumn(0);
+            // Instructions Sheet
+            Sheet instructionSheet = workbook.createSheet("Hướng dẫn");
+
+            CellStyle titleStyle = workbook.createCellStyle();
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 14);
+            titleStyle.setFont(titleFont);
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(org.apache.poi.ss.usermodel.IndexedColors.LIGHT_YELLOW.getIndex());
+            headerStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderBottom(org.apache.poi.ss.usermodel.BorderStyle.THIN);
+
+            int rowNum = 0;
+            Row titleRow = instructionSheet.createRow(rowNum++);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("HƯỚNG DẪN IMPORT CƯ DÂN");
+            titleCell.setCellStyle(titleStyle);
+
+            rowNum++; // Spacer
+
+            String[][] instructions = {
+                    { "Cột", "Mô tả", "Bắt buộc", "Lưu ý" },
+                    { "Building Code", "Mã tòa nhà", "Có", "Phải tồn tại trong hệ thống (VD: T01)." },
+                    { "Unit Code", "Mã căn hộ", "Có", "Phải tồn tại trong tòa nhà tương ứng (VD: A0101)." },
+                    { "Full Name", "Họ và tên", "Có", "Tên đầy đủ của cư dân." },
+                    { "Phone", "Số điện thoại", "Có",
+                            "Dùng để định danh. Nếu trùng SĐT hệ thống sẽ báo lỗi nếu tên khác." },
+                    { "Email", "Email liên hệ", "Không", "" },
+                    { "National ID", "CMND/CCCD/Passport", "Không", "Nếu điền phải là duy nhất trong hệ thống." },
+                    { "DOB", "Ngày sinh", "Không", "Định dạng: yyyy-MM-dd (VD: 1990-01-01)." },
+                    { "Status", "Trạng thái cư trú", "Có", "ACTIVE (Đang ở), TEMPORARY (Tạm trú), INACTIVE (Đã rời)." },
+                    { "Party Type", "Loại cư dân", "Có", "RESIDENT (Cư dân), TENANT (Khách thuê), GUEST (Khách)." },
+                    { "Relation", "Quan hệ với chủ hộ", "Có",
+                            "HEAD (Chủ hộ), WIFE (Vợ), HUSBAND (Chồng), SON (Con trai), DAUGHTER (Con gái), PARENT (Cha mẹ), OTHER (Khác)." },
+                    { "Is Primary", "Là người đại diện", "Có",
+                            "YES (Có) hoặc NO (Không). Mỗi hộ nên có 1 người đại diện." },
+                    { "Start Date", "Ngày bắt đầu ở", "Có",
+                            "Định dạng: yyyy-MM-dd. Xác định thời điểm bắt đầu của hộ gia đình." },
+                    { "Joined At", "Ngày chuyển vào", "Có", "Định dạng: yyyy-MM-dd. Ngày cư dân thực tế chuyển vào." }
+            };
+
+            for (int i = 0; i < instructions.length; i++) {
+                Row row = instructionSheet.createRow(rowNum++);
+                for (int j = 0; j < instructions[i].length; j++) {
+                    Cell cell = row.createCell(j);
+                    cell.setCellValue(instructions[i][j]);
+                    if (i == 0) {
+                        cell.setCellStyle(headerStyle);
+                    }
+                }
+            }
+
+            for (int i = 0; i < 4; i++)
+                instructionSheet.autoSizeColumn(i);
 
             // Data Sheet
             Sheet sheet = workbook.createSheet("Residents");
@@ -190,18 +237,18 @@ public class ResidentViewService {
                     "DOB (yyyy-mm-dd)", "Status", "Party Type", "Relation", "Is Primary", "Start Date (yyyy-mm-dd)",
                     "Joined At (yyyy-mm-dd)" };
 
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
+            CellStyle dataHeaderStyle = workbook.createCellStyle();
+            dataHeaderStyle.setFont(headerFont);
+            dataHeaderStyle
+                    .setFillForegroundColor(org.apache.poi.ss.usermodel.IndexedColors.GREY_25_PERCENT.getIndex());
+            dataHeaderStyle.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
 
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
+                cell.setCellStyle(dataHeaderStyle);
             }
 
-            // Auto size columns
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
             }
@@ -222,6 +269,20 @@ public class ResidentViewService {
                 Workbook errorWorkbook = new XSSFWorkbook()) {
 
             Sheet sheet = workbook.getSheet("Residents");
+            // If "Residents" sheet not found, try to find first data sheet (skip
+            // Instructions)
+            if (sheet == null) {
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    Sheet s = workbook.getSheetAt(i);
+                    String sName = s.getSheetName();
+                    if (!sName.equalsIgnoreCase("Hướng dẫn") && !sName.equalsIgnoreCase("README")
+                            && !sName.equalsIgnoreCase("Instruction")) {
+                        sheet = s;
+                        break;
+                    }
+                }
+            }
+            // Fallback to first sheet if still null
             if (sheet == null)
                 sheet = workbook.getSheetAt(0);
 
@@ -244,6 +305,21 @@ public class ResidentViewService {
             while (rows.hasNext()) {
                 Row currentRow = rows.next();
                 rowCount++;
+
+                // Skip empty rows
+                boolean isEmptyRow = true;
+                int lastCellNum = currentRow.getLastCellNum();
+                for (int i = 0; i < lastCellNum; i++) {
+                    Cell cell = currentRow.getCell(i);
+                    if (cell != null && cell.getCellType() != CellType.BLANK
+                            && !dataFormatter.formatCellValue(cell).trim().isEmpty()) {
+                        isEmptyRow = false;
+                        break;
+                    }
+                }
+                if (isEmptyRow)
+                    continue;
+
                 try {
                     processImportRow(currentRow, dataFormatter);
                 } catch (Exception e) {
@@ -325,14 +401,7 @@ public class ResidentViewService {
         if (joinedAt == null)
             joinedAt = LocalDate.now();
 
-        // Find Building (Optional verification, but Unit finding uses it)
-        // Actually UnitRepository.findByBuildingIdAndCode needs buildingId.
-        // So we need to find building by code first?
-        // BuildingRepository doesn't seem to have code lookup?
-        // Let's assume UnitRepository can find by just unitCode if strictly unique? No,
-        // text says "Building Code" and "Unit Code".
-        // I need to look up Building by code.
-
+        // Find Building
         com.QhomeBase.baseservice.model.Building building = buildingRepository.findByCode(buildingCode)
                 .orElseThrow(() -> new IllegalArgumentException("Building not found: " + buildingCode));
 
@@ -340,16 +409,37 @@ public class ResidentViewService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Unit not found: " + unitCode + " in building " + buildingCode));
 
+        System.out.println("DEBUG IMPORT: Found Unit " + unit.getCode() + " (ID: " + unit.getId() + ")");
+
         // Resident
         Resident resident;
+        boolean residentExists = false;
         if (phone != null && !phone.isEmpty()) {
             if (residentRepository.existsByPhone(phone)) {
-                // Check if unique constraint? If same person, update?
-                // Requirement says check duplicates. I'll assume error if duplicate exists but
-                // distinct?
-                // Simple logic for now: Find existing
                 resident = residentRepository.findByPhone(phone).get();
-                // Optionally update info?
+                residentExists = true;
+                System.out.println("DEBUG IMPORT: Found existing resident by phone: " + phone + " (Name: "
+                        + resident.getFullName() + ", ID: " + resident.getId() + ")");
+
+                // Check if existing data matches import data
+                if (!fullName.equals(resident.getFullName())) {
+                    throw new IllegalArgumentException("Resident with phone " + phone
+                            + " already exists with different name: " + resident.getFullName());
+                }
+
+                // If National ID provided in import, check if it matches existing
+                if (resident.getNationalId() != null && nationalId != null
+                        && !nationalId.equals(resident.getNationalId())) {
+                    throw new IllegalArgumentException(
+                            "Resident with phone " + phone + " has different National ID: " + resident.getNationalId());
+                }
+
+                // If DOB provided, check if it matches
+                if (resident.getDob() != null && dob != null && !dob.equals(resident.getDob())) {
+                    throw new IllegalArgumentException(
+                            "Resident with phone " + phone + " has different DOB: " + resident.getDob());
+                }
+
             } else {
                 resident = new Resident();
                 resident.setPhone(phone);
@@ -359,25 +449,50 @@ public class ResidentViewService {
                 resident.setDob(dob);
                 resident.setStatus(status);
                 residentRepository.save(resident);
+                System.out
+                        .println("DEBUG IMPORT: Created new resident: " + fullName + " (ID: " + resident.getId() + ")");
             }
         } else {
             // If no phone, maybe check National ID?
             if (nationalId != null && !nationalId.isEmpty() && residentRepository.existsByNationalId(nationalId)) {
                 resident = residentRepository.findByNationalId(nationalId).get();
+                residentExists = true;
+                System.out.println("DEBUG IMPORT: Found existing resident by National ID: " + nationalId + " (Name: "
+                        + resident.getFullName() + ", ID: " + resident.getId() + ")");
+
+                // Check name conflict
+                if (!fullName.equals(resident.getFullName())) {
+                    throw new IllegalArgumentException("Resident with National ID " + nationalId
+                            + " already exists with different name: " + resident.getFullName());
+                }
+
+                // Check DOB conflict
+                if (resident.getDob() != null && dob != null && !dob.equals(resident.getDob())) {
+                    throw new IllegalArgumentException(
+                            "Resident with National ID " + nationalId + " has different DOB: " + resident.getDob());
+                }
             } else {
                 throw new IllegalArgumentException("Phone or National ID required for new resident");
             }
         }
 
         // Household
-        // Check for existing active household of same kind in unit?
-        // Or create new?
-        // Simplification: Try to find open household for this unit.
-        List<Household> households = householdRepository.findCurrentByUnitId(unit.getId());
-        Household household = households.stream()
-                .filter(h -> h.getKind() == kind)
+        // Prioritize finding an exact match by start date to avoid overlap conflicts
+        List<Household> existingHouseholds = householdRepository.findByUnitIdAndKind(unit.getId(), kind);
+
+        final LocalDate targetStartDate = startDate;
+        Household household = existingHouseholds.stream()
+                .filter(h -> h.getStartDate().equals(targetStartDate))
                 .findFirst()
                 .orElse(null);
+
+        // If no exact start date match, try to find a current active one
+        if (household == null) {
+            household = existingHouseholds.stream()
+                    .filter(h -> h.getEndDate() == null || h.getEndDate().isAfter(LocalDate.now()))
+                    .findFirst()
+                    .orElse(null);
+        }
 
         if (household == null) {
             household = new Household();
@@ -385,19 +500,55 @@ public class ResidentViewService {
             household.setKind(kind);
             household.setStartDate(startDate);
             householdRepository.save(household);
+            System.out.println("DEBUG IMPORT: Created NEW Household " + household.getId());
+        } else {
+            System.out.println("DEBUG IMPORT: Reusing Household " + household.getId() + " (Start: "
+                    + household.getStartDate() + ", End: " + household.getEndDate() + ")");
+            if (household.getEndDate() != null) {
+                household.setEndDate(null);
+                householdRepository.save(household);
+                System.out.println("DEBUG IMPORT: Re-activated Household (Set EndDate to null)");
+            }
         }
 
         // Member
-        // Check if already member
-        // Composite key check?
-        // find a way to check existence
-        // Assume householdMemberRepository has a way?
-        // Just create new for now, beware of unique constraint uniqueConstraints =
-        // {@UniqueConstraint(name = "uq_member_unique", columnNames = {"household_id",
-        // "resident_id"})}
-        boolean isMember = householdMemberRepository.existsByHouseholdIdAndResidentId(household.getId(),
-                resident.getId());
-        if (!isMember) {
+        // Check if member exists (active or inactive) and update/reactivate
+        Optional<HouseholdMember> existingMemberOpt = householdMemberRepository
+                .findByHouseholdIdAndResidentId(household.getId(), resident.getId());
+
+        if (existingMemberOpt.isPresent()) {
+            HouseholdMember member = existingMemberOpt.get();
+            boolean needSave = false;
+
+            // Reactivate if left
+            if (member.getLeftAt() != null) {
+                member.setLeftAt(null);
+                needSave = true;
+                System.out.println("DEBUG IMPORT: Cleared LeftAt for existing member");
+            }
+
+            // Update relation/primary status if changed?
+            // For now, let's assume we update them to match import file
+            if (!member.getRelation().equals(relation)) {
+                member.setRelation(relation);
+                needSave = true;
+            }
+            // Parse boolean properly
+            boolean newIsPrimary = Boolean.parseBoolean(isPrimaryStr) || "1".equals(isPrimaryStr)
+                    || "YES".equalsIgnoreCase(isPrimaryStr);
+            if (member.getIsPrimary() != newIsPrimary) {
+                member.setIsPrimary(newIsPrimary);
+                needSave = true;
+            }
+
+            if (needSave) {
+                householdMemberRepository.save(member);
+                System.out.println("DEBUG IMPORT: Updated existing member " + member.getId());
+            } else {
+                System.out.println("DEBUG IMPORT: Member already up-to-date");
+            }
+
+        } else {
             HouseholdMember member = new HouseholdMember();
             member.setHouseholdId(household.getId());
             member.setResidentId(resident.getId());
@@ -406,6 +557,7 @@ public class ResidentViewService {
                     || "YES".equalsIgnoreCase(isPrimaryStr));
             member.setJoinedAt(joinedAt);
             householdMemberRepository.save(member);
+            System.out.println("DEBUG IMPORT: Created NEW Member " + member.getId());
         }
     }
 
