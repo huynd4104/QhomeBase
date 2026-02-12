@@ -211,9 +211,10 @@ public class ResidentViewService {
                             "HEAD (Chủ hộ), WIFE (Vợ), HUSBAND (Chồng), SON (Con trai), DAUGHTER (Con gái), PARENT (Cha mẹ), OTHER (Khác)." },
                     { "Is Primary", "Là người đại diện", "Có",
                             "YES (Có) hoặc NO (Không). Mỗi hộ nên có 1 người đại diện." },
-                    { "Start Date", "Ngày bắt đầu ở", "Có",
-                            "Định dạng: yyyy-MM-dd. Xác định thời điểm bắt đầu của hộ gia đình." },
-                    { "Joined At", "Ngày chuyển vào", "Có", "Định dạng: yyyy-MM-dd. Ngày cư dân thực tế chuyển vào." }
+                    { "Start Date", "Ngày bắt đầu ở", "Không",
+                            "Định dạng: yyyy-MM-dd. Nếu để trống sẽ lấy ngày hiện tại." },
+                    { "Joined At", "Ngày chuyển vào", "Không",
+                            "Định dạng: yyyy-MM-dd. Nếu để trống sẽ lấy ngày hiện tại." }
             };
 
             for (int i = 0; i < instructions.length; i++) {
