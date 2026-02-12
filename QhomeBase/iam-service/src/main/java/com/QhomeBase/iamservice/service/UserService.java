@@ -229,7 +229,7 @@ public class UserService {
     }
 
     @Transactional
-    public User createStaffAccount(String username, String email, List<UserRole> roles, boolean active,
+    public User createStaffAccount(String username, String email, String password, List<UserRole> roles, boolean active,
             String fullName, String phone, String nationalId, String address) {
         if (!StringUtils.hasText(username)) {
             throw new IllegalArgumentException("Username cannot be empty");
@@ -258,7 +258,18 @@ public class UserService {
         if (userRepository.findByEmail(trimmedEmail).isPresent()) {
             throw new IllegalArgumentException("Email already exists: " + trimmedEmail);
         }
-        String rawPassword = generateRandomPassword(12);
+
+        String rawPassword;
+        if (StringUtils.hasText(password)) {
+            if (!isStrongPassword(password)) {
+                throw new IllegalArgumentException(
+                        "Password must be at least 8 characters and contain at least one special character");
+            }
+            rawPassword = password;
+        } else {
+            rawPassword = generateRandomPassword(12);
+        }
+
         String encodedPassword = passwordEncoder.encode(rawPassword);
         User user = User.builder()
                 .username(trimmedUsername)

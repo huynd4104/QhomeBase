@@ -362,6 +362,7 @@ public class UserController {
             User user = userService.createStaffAccount(
                     request.username(),
                     request.email(),
+                    request.password(), // Pass password
                     roles,
                     request.active() == null || request.active(),
                     request.fullName(),
@@ -564,6 +565,7 @@ public class UserController {
     public record CreateStaffRequest(
             @NotBlank(message = "Username is required") @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters") String username,
             @NotBlank(message = "Email is required") @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.com$", message = "Email phải có đuôi .com. Ví dụ: user@example.com") String email,
+            String password, // Optional password
             @NotEmpty(message = "Staff roles are required") List<@NotBlank(message = "Role value cannot be blank") String> roles,
             Boolean active,
             @NotBlank(message = "Full name is required") String fullName,

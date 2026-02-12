@@ -32,8 +32,13 @@ public class StaffImportService {
 
     private static final int COL_USERNAME = 0;
     private static final int COL_EMAIL = 1;
-    private static final int COL_ROLE = 2;
-    private static final int COL_ACTIVE = 3;
+    private static final int COL_PASSWORD = 2; // New
+    private static final int COL_ROLE = 3;
+    private static final int COL_ACTIVE = 4;
+    private static final int COL_FULLNAME = 5; // New
+    private static final int COL_PHONE = 6; // New
+    private static final int COL_NATIONAL_ID = 7; // New
+    private static final int COL_ADDRESS = 8; // New
 
     private static final DataFormatter DATA_FORMATTER = new DataFormatter();
 
@@ -44,23 +49,14 @@ public class StaffImportService {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("StaffImport");
             Row header = sheet.createRow(0);
-            String[] headers = { "username", "email", "role", "active" };
+            String[] headers = { "username", "email", "password", "role", "active", "fullName", "phone", "nationalId",
+                    "address" };
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(headers[i]);
             }
 
-            Row sample1 = sheet.createRow(1);
-            sample1.createCell(COL_USERNAME).setCellValue("staff.accountant");
-            sample1.createCell(COL_EMAIL).setCellValue("staff.accountant@example.com");
-            sample1.createCell(COL_ROLE).setCellValue("ACCOUNTANT");
-            sample1.createCell(COL_ACTIVE).setCellValue(true);
-
-            Row sample2 = sheet.createRow(2);
-            sample2.createCell(COL_USERNAME).setCellValue("tech.support");
-            sample2.createCell(COL_EMAIL).setCellValue("tech.support@example.com");
-            sample2.createCell(COL_ROLE).setCellValue("TECHNICIAN");
-            sample2.createCell(COL_ACTIVE).setCellValue(false);
+            createInstructionSheet(workbook);
 
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
@@ -104,48 +100,41 @@ public class StaffImportService {
 
                 String username = getCellString(row, COL_USERNAME);
                 String email = getCellString(row, COL_EMAIL);
+                String password = getCellString(row, COL_PASSWORD);
                 String rawRole = getCellString(row, COL_ROLE);
                 String activeRaw = getCellString(row, COL_ACTIVE);
                 Boolean active = getCellBoolean(row, COL_ACTIVE);
+                String fullName = getCellString(row, COL_FULLNAME);
+                String phone = getCellString(row, COL_PHONE);
+                String nationalId = getCellString(row, COL_NATIONAL_ID);
+                String address = getCellString(row, COL_ADDRESS);
 
                 String trimmedUsername = username != null ? username.trim().toLowerCase() : "";
                 String trimmedEmail = email != null ? email.trim().toLowerCase() : "";
 
                 if (StringUtils.hasText(trimmedUsername) && seenUsernames.contains(trimmedUsername)) {
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            List.of(),
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, List.of(), active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             "Username (row " + excelRowNumber + ") đã được sử dụng ở dòng khác trong file này"));
                     continue;
                 }
 
                 if (StringUtils.hasText(trimmedEmail) && seenEmails.contains(trimmedEmail)) {
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            List.of(),
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, List.of(), active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             "Email (row " + excelRowNumber + ") đã được sử dụng ở dòng khác trong file này"));
                     continue;
                 }
 
                 if (!StringUtils.hasText(rawRole)) {
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            List.of(),
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, List.of(), active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             "Role (row " + excelRowNumber + ") không được để trống"));
                     continue;
                 }
@@ -154,41 +143,37 @@ public class StaffImportService {
 
                 if (roleNames.isEmpty()) {
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            List.of(),
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, List.of(), active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             "Role (row " + excelRowNumber + ") không được để trống"));
                     continue;
                 }
 
                 if (roleNames.size() > 1) {
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            roleNames,
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, roleNames, active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             "Role (row " + excelRowNumber + ") chỉ được phép có 1 role, không được có nhiều roles"));
                     continue;
                 }
 
                 try {
-                    StaffImportRow parsedRow = buildImportRow(excelRowNumber, username, email, roleNames, active,
-                            activeRaw);
+                    StaffImportRow parsedRow = buildImportRow(excelRowNumber, username, email, password, roleNames,
+                            active, activeRaw, fullName, phone, nationalId, address);
                     User created = userService.createStaffAccount(
                             parsedRow.getUsername(),
                             parsedRow.getEmail(),
+                            parsedRow.getPassword(),
                             parsedRow.getRoles(),
                             parsedRow.getActive() == null || parsedRow.getActive(),
-                            null, null, null, null);
+                            parsedRow.getFullName(),
+                            parsedRow.getPhone(),
+                            parsedRow.getNationalId(),
+                            parsedRow.getAddress());
                     baseServiceClient.syncStaffResident(created.getId(), created.getUsername(), created.getEmail(),
-                            null);
+                            parsedRow.getPhone());
                     successRows++;
                     seenUsernames.add(parsedRow.getUsername().toLowerCase());
                     seenEmails.add(parsedRow.getEmail().toLowerCase());
@@ -196,21 +181,22 @@ public class StaffImportService {
                             excelRowNumber,
                             parsedRow.getUsername(),
                             parsedRow.getEmail(),
+                            parsedRow.getPassword(),
                             roleNames,
                             parsedRow.getActive(),
+                            parsedRow.getFullName(),
+                            parsedRow.getPhone(),
+                            parsedRow.getNationalId(),
+                            parsedRow.getAddress(),
                             true,
                             created.getId(),
                             "Created"));
                 } catch (Exception ex) {
                     log.warn("Failed to import staff row {}: {}", excelRowNumber, ex.getMessage());
                     rowResults.add(new StaffImportRowResult(
-                            excelRowNumber,
-                            username,
-                            email,
-                            roleNames,
-                            active,
-                            false,
-                            null,
+                            excelRowNumber, username, email, password, roleNames, active, fullName, phone, nationalId,
+                            address,
+                            false, null,
                             ex.getMessage()));
                 }
             }
@@ -225,9 +211,14 @@ public class StaffImportService {
     private StaffImportRow buildImportRow(int rowNumber,
             String username,
             String email,
+            String password,
             List<String> roleNames,
             Boolean active,
-            String activeRaw) {
+            String activeRaw,
+            String fullName,
+            String phone,
+            String nationalId,
+            String address) {
         if (!StringUtils.hasText(username)) {
             throw new IllegalArgumentException("Username (row " + rowNumber + ") không được để trống");
         }
@@ -239,6 +230,10 @@ public class StaffImportService {
         }
         String trimmedEmail = email.trim();
         validateEmail(trimmedEmail, rowNumber);
+
+        if (!StringUtils.hasText(fullName)) {
+            throw new IllegalArgumentException("Full Name (row " + rowNumber + ") không được để trống");
+        }
 
         if (roleNames.isEmpty()) {
             throw new IllegalArgumentException("Role (row " + rowNumber + ") không được để trống");
@@ -278,8 +273,13 @@ public class StaffImportService {
                 .rowNumber(rowNumber)
                 .username(trimmedUsername)
                 .email(trimmedEmail)
+                .password(password)
                 .roles(roles)
                 .active(active)
+                .fullName(fullName)
+                .phone(phone)
+                .nationalId(nationalId)
+                .address(address)
                 .build();
     }
 
@@ -460,12 +460,54 @@ public class StaffImportService {
         if (row == null) {
             return true;
         }
-        for (int i = COL_USERNAME; i <= COL_ACTIVE; i++) {
+        for (int i = COL_USERNAME; i <= COL_ADDRESS; i++) {
             Cell cell = row.getCell(i);
             if (cell != null && cell.getCellType() != CellType.BLANK && StringUtils.hasText(getCellString(row, i))) {
                 return false;
             }
         }
         return true;
+    }
+    private void createInstructionSheet(Workbook workbook) {
+        Sheet sheet = workbook.createSheet("Hướng dẫn");
+        Row header = sheet.createRow(0);
+
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+
+        String[] headers = { "Tên cột", "Mô tả", "Quy tắc / Bắt buộc" };
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        String[][] instructions = {
+                { "username", "Tên đăng nhập hệ thống",
+                        "Bắt buộc. Duy nhất. 6-16 ký tự. Chỉ chứa chữ thường, số, dấu '.', '_', '-'." },
+                { "email", "Địa chỉ Email", "Bắt buộc. Duy nhất. Phải đúng định dạng email và có đuôi .com." },
+                { "password", "Mật khẩu", "Bắt buộc. Tối thiểu 6 ký tự." },
+                { "role", "Vai trò",
+                        "Bắt buộc. Giá trị hợp lệ: ACCOUNTANT (Kế toán), TECHNICIAN (Kỹ thuật), SUPPORTER (Hỗ trợ). Không dùng ADMIN." },
+                { "active", "Trạng thái", "Bắt buộc. Nhập: TRUE (Hoạt động) hoặc FALSE (Khóa)." },
+                { "fullName", "Họ và tên", "Bắt buộc." },
+                { "phone", "Số điện thoại", "Tùy chọn." },
+                { "nationalId", "CMND/CCCD", "Tùy chọn." },
+                { "address", "Địa chỉ", "Tùy chọn." }
+        };
+
+        int rowIdx = 1;
+        for (String[] rowData : instructions) {
+            Row row = sheet.createRow(rowIdx++);
+            for (int i = 0; i < rowData.length; i++) {
+                row.createCell(i).setCellValue(rowData[i]);
+            }
+        }
+
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
     }
 }

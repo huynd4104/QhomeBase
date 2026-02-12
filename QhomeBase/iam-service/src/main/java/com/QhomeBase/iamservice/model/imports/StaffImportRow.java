@@ -12,17 +12,11 @@ public class StaffImportRow {
     private int rowNumber;
     private String username;
     private String email;
+    private String password;
     private List<UserRole> roles;
     private Boolean active;
+    private String fullName;
+    private String phone;
+    private String nationalId;
+    private String address;
 }
-
-
-
-
-
-
-
-
-
-
-
