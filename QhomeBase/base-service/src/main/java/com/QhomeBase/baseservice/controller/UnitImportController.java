@@ -69,11 +69,19 @@ public class UnitImportController {
 
     @GetMapping(value = "/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     @PreAuthorize("@authz.canViewUnits()")
-    public ResponseEntity<byte[]> exportUnits(@RequestParam(value = "buildingId", required = false) UUID buildingId) {
+    public ResponseEntity<byte[]> exportUnits(
+            @RequestParam(value = "buildingId", required = false) UUID buildingId,
+            @RequestParam(value = "floor", required = false) Integer floor) {
+        log.info("Export request - buildingId: {}, floor: {}", buildingId, floor);
         byte[] bytes;
-        if (buildingId != null) {
+        if (buildingId != null && floor != null) {
+            log.info("Exporting by building and floor");
+            bytes = unitExportService.exportUnitsByBuildingAndFloorToExcel(buildingId, floor);
+        } else if (buildingId != null) {
+            log.info("Exporting by building only");
             bytes = unitExportService.exportUnitsByBuildingToExcel(buildingId);
         } else {
+            log.info("Exporting all units");
             bytes = unitExportService.exportUnitsToExcel();
         }
         return ResponseEntity.ok()
