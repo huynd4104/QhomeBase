@@ -354,4 +354,16 @@ public class ResidentController {
             return ResponseEntity.ok(List.of());
         }
     }
+
+    @PostMapping("/by-user-ids")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORTER')")
+    public ResponseEntity<List<ResidentDto>> getResidentsByUserIds(@RequestBody List<UUID> userIds) {
+        try {
+            List<ResidentDto> residents = residentService.findByUserIds(userIds);
+            return ResponseEntity.ok(residents);
+        } catch (Exception e) {
+            log.error("Failed to get residents by user IDs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

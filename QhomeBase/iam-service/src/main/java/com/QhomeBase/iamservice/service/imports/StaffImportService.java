@@ -235,6 +235,18 @@ public class StaffImportService {
             throw new IllegalArgumentException("Full Name (row " + rowNumber + ") không được để trống");
         }
 
+        if (!StringUtils.hasText(phone)) {
+            throw new IllegalArgumentException("Phone (row " + rowNumber + ") không được để trống");
+        }
+
+        if (!StringUtils.hasText(nationalId)) {
+            throw new IllegalArgumentException("National ID (row " + rowNumber + ") không được để trống");
+        }
+
+        if (!StringUtils.hasText(address)) {
+            throw new IllegalArgumentException("Address (row " + rowNumber + ") không được để trống");
+        }
+
         if (roleNames.isEmpty()) {
             throw new IllegalArgumentException("Role (row " + rowNumber + ") không được để trống");
         }
@@ -488,14 +500,14 @@ public class StaffImportService {
                 { "username", "Tên đăng nhập hệ thống",
                         "Bắt buộc. Duy nhất. 6-16 ký tự. Chỉ chứa chữ thường, số, dấu '.', '_', '-'." },
                 { "email", "Địa chỉ Email", "Bắt buộc. Duy nhất. Phải đúng định dạng email và có đuôi .com." },
-                { "password", "Mật khẩu", "Bắt buộc. Tối thiểu 6 ký tự." },
+                { "password", "Mật khẩu", "Tùy chọn. Nếu để trống sẽ tự động tạo ngẫu nhiên." },
                 { "role", "Vai trò",
                         "Bắt buộc. Giá trị hợp lệ: ACCOUNTANT (Kế toán), TECHNICIAN (Kỹ thuật), SUPPORTER (Hỗ trợ). Không dùng ADMIN." },
                 { "active", "Trạng thái", "Bắt buộc. Nhập: TRUE (Hoạt động) hoặc FALSE (Khóa)." },
                 { "fullName", "Họ và tên", "Bắt buộc." },
-                { "phone", "Số điện thoại", "Tùy chọn." },
-                { "nationalId", "CMND/CCCD", "Tùy chọn." },
-                { "address", "Địa chỉ", "Tùy chọn." }
+                { "phone", "Số điện thoại", "Bắt buộc." },
+                { "nationalId", "CMND/CCCD", "Bắt buộc." },
+                { "address", "Địa chỉ", "Bắt buộc." }
         };
 
         int rowIdx = 1;

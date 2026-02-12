@@ -53,7 +53,7 @@ TRUNCATE TABLE
 
     -- Schema iam
     iam.auth_events, iam.jwks_keys, iam.permissions, iam.refresh_tokens, 
-    iam.role_assignment_audit, iam.role_permissions, iam.roles, iam.user_roles, iam.users,
+    iam.role_assignment_audit, iam.role_permissions, iam.roles, iam.user_roles, iam.users, iam.staff_profiles,
 
     -- Schema marketplace
     marketplace.marketplace_categories, marketplace.marketplace_comments, 

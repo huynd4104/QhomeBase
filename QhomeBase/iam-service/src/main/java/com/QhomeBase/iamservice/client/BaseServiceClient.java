@@ -78,6 +78,31 @@ public class BaseServiceClient {
         }
     }
 
+    public List<ResidentDto> getResidentsByUserIds(List<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        try {
+            return baseServiceWebClient
+                    .post()
+                    .uri("/api/residents/by-user-ids")
+                    .headers(headers -> {
+                        String token = extractToken();
+                        if (token != null) {
+                            headers.setBearerAuth(token);
+                        }
+                    })
+                    .bodyValue(userIds)
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<List<ResidentDto>>() {
+                    })
+                    .block();
+        } catch (Exception e) {
+            log.error("Error fetching residents by user IDs: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     private String extractToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null
@@ -92,5 +117,18 @@ public class BaseServiceClient {
             String fullName,
             String email,
             String phone) {
+    }
+
+    public record ResidentDto(
+            UUID id,
+            String fullName,
+            String phone,
+            String email,
+            String nationalId,
+            java.time.LocalDate dob,
+            String status,
+            UUID userId,
+            java.time.OffsetDateTime createdAt,
+            java.time.OffsetDateTime updatedAt) {
     }
 }

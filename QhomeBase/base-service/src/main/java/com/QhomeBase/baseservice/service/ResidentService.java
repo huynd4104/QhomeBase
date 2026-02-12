@@ -145,6 +145,15 @@ public class ResidentService {
         return residentRepository.findByUserId(userId);
     }
 
+    public List<ResidentDto> findByUserIds(List<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return residentRepository.findByUserIdIn(userIds).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     public ResidentDto getByUserId(UUID userId) {
         Resident resident = residentRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Resident not found for user: " + userId));

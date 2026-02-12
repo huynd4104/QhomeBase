@@ -25,8 +25,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings("null")
 public class UserService {
 
-    private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
-            "^(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
+    private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile("^.{6,}$");
 
     public final UserRepository userRepository;
     private final StaffProfileRepository staffProfileRepository;
@@ -243,6 +242,16 @@ public class UserService {
         String trimmedEmail = email.trim();
         validateEmail(trimmedEmail);
 
+        if (!StringUtils.hasText(phone)) {
+            throw new IllegalArgumentException("Phone cannot be empty");
+        }
+        if (!StringUtils.hasText(nationalId)) {
+            throw new IllegalArgumentException("National ID cannot be empty");
+        }
+        if (!StringUtils.hasText(address)) {
+            throw new IllegalArgumentException("Address cannot be empty");
+        }
+
         if (roles == null || roles.isEmpty()) {
             throw new IllegalArgumentException("Staff account requires at least one role");
         }
@@ -262,8 +271,7 @@ public class UserService {
         String rawPassword;
         if (StringUtils.hasText(password)) {
             if (!isStrongPassword(password)) {
-                throw new IllegalArgumentException(
-                        "Password must be at least 8 characters and contain at least one special character");
+                throw new IllegalArgumentException("Password must be at least 6 characters");
             }
             rawPassword = password;
         } else {
