@@ -5,5 +5,6 @@ public enum RoomType {
     LIVING_ROOM, // Phòng khách
     BEDROOM, // Phòng ngủ
     KITCHEN, // Nhà bếp
-    HALLWAY // Hành lang
+    HALLWAY, // Hành lang
+    OTHER
 }

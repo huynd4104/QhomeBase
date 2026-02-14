@@ -7,9 +7,7 @@ import com.QhomeBase.baseservice.service.AssetService;
 import com.QhomeBase.baseservice.service.exports.AssetExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -94,26 +92,5 @@ public class AssetController {
     public ResponseEntity<AssetDto> deactivateAsset(@PathVariable UUID id) {
         AssetDto result = assetService.deactivateAsset(id);
         return ResponseEntity.ok(result);
-    }
-
-    @GetMapping(value = "/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public ResponseEntity<byte[]> exportAssetsToExcel(
-            @RequestParam(required = false) String buildingId,
-            @RequestParam(required = false) String unitId,
-            @RequestParam(required = false) String assetType) {
-        try {
-            byte[] bytes = assetExportService.exportAssetsToExcel(buildingId, unitId, assetType);
-
-            String filename = String.format("danh_sach_thiet_bi_%s.xlsx",
-                    java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")));
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(bytes);
-        } catch (Exception e) {
-            log.error("Failed to export assets", e);
-            return ResponseEntity.internalServerError().build();
-        }
     }
 }

@@ -2,6 +2,7 @@ package com.QhomeBase.iamservice.client;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Slf4j
 public class BaseServiceClient {
 
+    @Qualifier("baseServiceWebClient")
     private final WebClient baseServiceWebClient;
 
     public void syncStaffResident(UUID userId, String fullName, String email, String phone) {

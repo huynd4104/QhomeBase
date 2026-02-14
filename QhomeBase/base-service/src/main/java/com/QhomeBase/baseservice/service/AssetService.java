@@ -90,9 +90,13 @@ public class AssetService {
                 .roomType(req.roomType())
                 .assetCode(req.assetCode())
                 .name(req.name())
+                .brand(req.brand())
+                .model(req.model())
+                .serialNumber(req.serialNumber())
+                .description(req.description())
+                .warrantyUntil(req.warrantyUntil())
                 .active(req.active() != null ? req.active() : true)
                 .installedAt(req.installedAt())
-                .purchasePrice(req.purchasePrice())
                 .build();
 
         Asset saved = assetRepository.save(asset);
@@ -112,14 +116,14 @@ public class AssetService {
             asset.setAssetCode(req.assetCode());
         }
 
-        if (req.name() != null)
-            asset.setName(req.name());
-        if (req.active() != null)
-            asset.setActive(req.active());
-        if (req.installedAt() != null)
-            asset.setInstalledAt(req.installedAt());
-        if (req.purchasePrice() != null)
-            asset.setPurchasePrice(req.purchasePrice());
+        if (req.name() != null) asset.setName(req.name());
+        if (req.brand() != null) asset.setBrand(req.brand());
+        if (req.model() != null) asset.setModel(req.model());
+        if (req.serialNumber() != null) asset.setSerialNumber(req.serialNumber());
+        if (req.description() != null) asset.setDescription(req.description());
+        if (req.warrantyUntil() != null) asset.setWarrantyUntil(req.warrantyUntil());
+        if (req.active() != null) asset.setActive(req.active());
+        if (req.installedAt() != null) asset.setInstalledAt(req.installedAt());
 
         Asset updated = assetRepository.save(asset);
         log.info("Updated asset: {}", updated.getId());
@@ -172,28 +176,34 @@ public class AssetService {
                 asset.getInstalledAt(),
                 asset.getRemovedAt(),
                 asset.getWarrantyUntil(),
-                asset.getPurchasePrice(),
-                asset.getPurchaseDate(),
                 asset.getCreatedAt(),
                 asset.getUpdatedAt());
     }
 
     public record CreateAssetRequest(
             UUID unitId,
-            AssetType assetType,
             RoomType roomType,
+            AssetType assetType,
             String assetCode,
             String name,
+            String brand,
+            String model,
+            String serialNumber,
+            String description,
             Boolean active,
             LocalDate installedAt,
-            java.math.BigDecimal purchasePrice) {
-    }
+            LocalDate warrantyUntil
+    ) {}
 
     public record UpdateAssetRequest(
             String assetCode,
             String name,
+            String brand,
+            String model,
+            String serialNumber,
+            String description,
             Boolean active,
             LocalDate installedAt,
-            java.math.BigDecimal purchasePrice) {
-    }
+            LocalDate warrantyUntil
+    ) {}
 }

@@ -4,7 +4,6 @@ import com.QhomeBase.baseservice.dto.ContractDetailDto;
 import com.QhomeBase.baseservice.dto.ContractFileDto;
 import com.QhomeBase.baseservice.dto.ContractSummary;
 import com.QhomeBase.baseservice.dto.CreateContractProxyRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -24,12 +23,13 @@ import java.time.OffsetDateTime;
 import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class ContractClient {
 
     @Qualifier("contractWebClient")
     private final WebClient contractWebClient;
+
+    public ContractClient(WebClient contractWebClient){this.contractWebClient = contractWebClient;}
 
     public Optional<ContractDetailDto> getContractById(UUID contractId) {
         try {

@@ -1,4 +1,4 @@
-package com.QhomeBase.baseservice.service.imports;
+package com.QhomeBase.baseservice.service.exports;
 
 import com.QhomeBase.baseservice.model.Meter;
 import com.QhomeBase.baseservice.repository.MeterRepository;
