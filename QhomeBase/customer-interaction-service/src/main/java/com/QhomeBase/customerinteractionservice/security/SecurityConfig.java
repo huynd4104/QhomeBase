@@ -1,5 +1,6 @@
 package com.QhomeBase.customerinteractionservice.security;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,7 +19,11 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, CorsConfigurationSource corsConfigurationSource) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            @Qualifier("corsConfigurationSource")
+            CorsConfigurationSource corsConfigurationSource
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.corsConfigurationSource = corsConfigurationSource;
     }

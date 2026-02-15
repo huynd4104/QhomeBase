@@ -2,8 +2,6 @@ package com.QhomeBase.baseservice.dto;
 
 import com.QhomeBase.baseservice.model.AssetType;
 import com.QhomeBase.baseservice.model.RoomType;
-
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -27,8 +25,6 @@ public record AssetDto(
         LocalDate installedAt,
         LocalDate removedAt,
         LocalDate warrantyUntil,
-        BigDecimal purchasePrice,
-        LocalDate purchaseDate,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 }

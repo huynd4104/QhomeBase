@@ -1,19 +1,21 @@
 package com.QhomeBase.customerinteractionservice.client;
 
 import com.QhomeBase.customerinteractionservice.client.dto.IamUserInfoResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class IamServiceClient {
 
+    @Qualifier("iamWebClient")
     private final WebClient iamWebClient;
+
+    public IamServiceClient(WebClient iamWebClient) {this.iamWebClient = iamWebClient;}
 
     public IamUserInfoResponse fetchUserInfo(UUID userId) {
         if (userId == null) {

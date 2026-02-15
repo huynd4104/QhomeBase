@@ -31,13 +31,13 @@ public class Asset {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "asset_type", nullable = false)
-    private AssetType assetType;
+    @Column(name = "room_type", nullable = false)
+    private RoomType roomType;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "room_type", nullable = false)
-    private RoomType roomType;
+    @Column(name = "asset_type", nullable = false)
+    private AssetType assetType;
 
     @Column(name = "asset_code", nullable = false, unique = true)
     private String assetCode;
@@ -69,12 +69,6 @@ public class Asset {
 
     @Column(name = "warranty_until")
     private LocalDate warrantyUntil;
-
-    @Column(name = "purchase_price", precision = 14, scale = 2)
-    private java.math.BigDecimal purchasePrice;
-
-    @Column(name = "purchase_date")
-    private LocalDate purchaseDate;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

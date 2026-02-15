@@ -4,6 +4,7 @@ import com.QhomeBase.assetmaintenanceservice.client.dto.BuildingDto;
 import com.QhomeBase.assetmaintenanceservice.client.dto.UnitDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Slf4j
 public class BaseServiceClient {
 
+    @Qualifier("baseServiceWebClient")
     private final WebClient baseServiceWebClient;
 
     public List<BuildingDto> getAllBuildings() {

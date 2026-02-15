@@ -120,15 +120,12 @@ public class AssetInspectionService {
         if (request.conditionStatus() != null) {
             item.setConditionStatus(request.conditionStatus());
         }
-        
-        if (request.damageCost() != null && request.damageCost().compareTo(BigDecimal.ZERO) >= 0) {
+        if (request.damageCost() != null) {
             item.setDamageCost(request.damageCost());
-        } else if (request.conditionStatus() != null) {
-            BigDecimal damageCost = calculateDamageCost(item.getAsset(), request.conditionStatus());
-            item.setDamageCost(damageCost);
-        } else if (request.conditionStatus() == null && request.damageCost() == null && item.getConditionStatus() != null) {
-            BigDecimal damageCost = calculateDamageCost(item.getAsset(), item.getConditionStatus());
-            item.setDamageCost(damageCost);
+        } else {
+            if (item.getDamageCost() == null) {
+                item.setDamageCost(BigDecimal.ZERO);
+            }
         }
         if (request.notes() != null) {
             item.setNotes(request.notes());
@@ -293,35 +290,8 @@ public class AssetInspectionService {
                 item.getChecked(),
                 item.getCheckedAt(),
                 item.getCheckedBy(),
-                item.getDamageCost() != null ? item.getDamageCost() : BigDecimal.ZERO,
-                asset != null && asset.getPurchasePrice() != null ? asset.getPurchasePrice() : BigDecimal.ZERO
+                item.getDamageCost() != null ? item.getDamageCost() : BigDecimal.ZERO
         );
-    }
-
-    private BigDecimal calculateDamageCost(Asset asset, String conditionStatus) {
-        if (asset == null || asset.getPurchasePrice() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal purchasePrice = asset.getPurchasePrice();
-        
-        if (conditionStatus == null || conditionStatus.trim().isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String status = conditionStatus.toUpperCase().trim();
-        
-        switch (status) {
-            case "GOOD":
-                return BigDecimal.ZERO;
-            case "DAMAGED":
-                return purchasePrice.multiply(new BigDecimal("0.5"));
-            case "MISSING":
-                return purchasePrice;
-            default:
-                log.warn("Unknown condition status: {}, returning 0", conditionStatus);
-                return BigDecimal.ZERO;
-        }
     }
 
     private void updateTotalDamageCost(AssetInspection inspection) {

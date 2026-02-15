@@ -4,8 +4,8 @@ import com.QhomeBase.customerinteractionservice.client.dto.HouseholdDto;
 import com.QhomeBase.customerinteractionservice.client.dto.HouseholdMemberDto;
 import com.QhomeBase.customerinteractionservice.client.dto.ResidentResponse;
 import com.QhomeBase.customerinteractionservice.client.dto.UnitDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -15,11 +15,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class BaseServiceClient {
 
+    @Qualifier("baseServiceWebClient")
     private final WebClient baseServiceWebClient;
+
+    public BaseServiceClient(WebClient baseServiceWebClient) {this.baseServiceWebClient = baseServiceWebClient;}
 
     public ResidentResponse getResidentById(UUID residentId) {
         if (residentId == null) {

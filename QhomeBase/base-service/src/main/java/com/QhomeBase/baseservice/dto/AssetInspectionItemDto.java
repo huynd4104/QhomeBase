@@ -15,7 +15,6 @@ public record AssetInspectionItemDto(
         Boolean checked,
         OffsetDateTime checkedAt,
         UUID checkedBy,
-        BigDecimal damageCost,
-        BigDecimal purchasePrice
+        BigDecimal damageCost
 ) {}
 
