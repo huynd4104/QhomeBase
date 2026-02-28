@@ -69,10 +69,8 @@ public class ResidentViewService {
             // Let's try to aggregate from buildings for now to ensure consistency,
             // though specific count queries would be faster.
             // Given the hierarchy, let's just use the buildings query and sum up.
-            List<ResidentViewBuildingDto> buildings = householdRepository.findBuildingsByYear(yearStart, yearEnd);
-
-            long totalResidents = buildings.stream().mapToLong(ResidentViewBuildingDto::getTotalResidents).sum();
-            long occupiedUnits = buildings.stream().mapToLong(ResidentViewBuildingDto::getOccupiedUnits).sum();
+            long totalResidents = householdRepository.countTotalResidentsByYear(yearStart, yearEnd);
+            long occupiedUnits = householdRepository.countOccupiedUnitsByYear(yearStart, yearEnd);
 
             years.add(ResidentViewYearDto.builder()
                     .year(year)

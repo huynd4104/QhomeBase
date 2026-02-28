@@ -41,6 +41,18 @@ public interface HouseholdRepository extends JpaRepository<Household, UUID> {
         @Query("SELECT max(h.endDate) FROM Household h")
         LocalDate findMaxEndDate();
 
+        @Query("SELECT count(distinct rm.residentId) " +
+                        "FROM Household h " +
+                        "JOIN HouseholdMember rm ON rm.householdId = h.id " +
+                        "WHERE h.startDate <= :yearEnd AND (h.endDate IS NULL OR h.endDate >= :yearStart) " +
+                        "AND (rm.joinedAt <= :yearEnd AND (rm.leftAt IS NULL OR rm.leftAt >= :yearStart))")
+        long countTotalResidentsByYear(@Param("yearStart") LocalDate yearStart, @Param("yearEnd") LocalDate yearEnd);
+
+        @Query("SELECT count(distinct h.unitId) " +
+                        "FROM Household h " +
+                        "WHERE h.startDate <= :yearEnd AND (h.endDate IS NULL OR h.endDate >= :yearStart)")
+        long countOccupiedUnitsByYear(@Param("yearStart") LocalDate yearStart, @Param("yearEnd") LocalDate yearEnd);
+
         @Query("SELECT new com.QhomeBase.baseservice.dto.residentview.ResidentViewBuildingDto(" +
                         "b.id, b.code, b.name, " +
                         "count(distinct rm.residentId), " +
