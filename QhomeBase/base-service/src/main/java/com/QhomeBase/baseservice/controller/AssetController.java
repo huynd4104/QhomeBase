@@ -82,15 +82,37 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
+    // --- Soft Delete ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAsset(@PathVariable UUID id) {
         assetService.deleteAsset(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<AssetDto> restoreAsset(@PathVariable UUID id) {
+        AssetDto result = assetService.restoreAsset(id);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/deleted")
+    public ResponseEntity<List<AssetDto>> getDeletedAssets() {
+        List<AssetDto> result = assetService.getDeletedAssets();
+        return ResponseEntity.ok(result);
+    }
+
+    // --- Deactivate (ngừng sử dụng) ---
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<AssetDto> deactivateAsset(@PathVariable UUID id) {
         AssetDto result = assetService.deactivateAsset(id);
+        return ResponseEntity.ok(result);
+    }
+
+    // --- Warranty Expiring ---
+    @GetMapping("/warranty-expiring")
+    public ResponseEntity<List<AssetDto>> getAssetsExpiringWarranty(
+            @RequestParam(defaultValue = "30") int days) {
+        List<AssetDto> result = assetService.getAssetsExpiringWarranty(days);
         return ResponseEntity.ok(result);
     }
 }
