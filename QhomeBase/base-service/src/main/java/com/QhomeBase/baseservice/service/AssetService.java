@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class AssetService {
 
     @Transactional(readOnly = true)
     public List<AssetDto> getAllAssets() {
-        return assetRepository.findAll().stream()
+        return assetRepository.findAllNotDeleted().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -116,28 +117,61 @@ public class AssetService {
             asset.setAssetCode(req.assetCode());
         }
 
-        if (req.name() != null) asset.setName(req.name());
-        if (req.brand() != null) asset.setBrand(req.brand());
-        if (req.model() != null) asset.setModel(req.model());
-        if (req.serialNumber() != null) asset.setSerialNumber(req.serialNumber());
-        if (req.description() != null) asset.setDescription(req.description());
-        if (req.warrantyUntil() != null) asset.setWarrantyUntil(req.warrantyUntil());
-        if (req.active() != null) asset.setActive(req.active());
-        if (req.installedAt() != null) asset.setInstalledAt(req.installedAt());
+        if (req.name() != null)
+            asset.setName(req.name());
+        if (req.brand() != null)
+            asset.setBrand(req.brand());
+        if (req.model() != null)
+            asset.setModel(req.model());
+        if (req.serialNumber() != null)
+            asset.setSerialNumber(req.serialNumber());
+        if (req.description() != null)
+            asset.setDescription(req.description());
+        if (req.warrantyUntil() != null)
+            asset.setWarrantyUntil(req.warrantyUntil());
+        if (req.active() != null)
+            asset.setActive(req.active());
+        if (req.installedAt() != null)
+            asset.setInstalledAt(req.installedAt());
 
         Asset updated = assetRepository.save(asset);
         log.info("Updated asset: {}", updated.getId());
         return toDto(updated);
     }
 
+    // --- Soft Delete ---
     @Transactional
     public void deleteAsset(UUID id) {
         Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + id));
-        assetRepository.delete(asset);
-        log.info("Deleted asset: {}", id);
+        asset.setDeleted(true);
+        asset.setDeletedAt(OffsetDateTime.now());
+        assetRepository.save(asset);
+        log.info("Soft-deleted asset: {}", id);
     }
 
+    @Transactional
+    public AssetDto restoreAsset(UUID id) {
+        Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + id));
+        if (!Boolean.TRUE.equals(asset.getDeleted())) {
+            throw new IllegalArgumentException("Asset is not deleted: " + id);
+        }
+        asset.setDeleted(false);
+        asset.setDeletedAt(null);
+        Asset restored = assetRepository.save(asset);
+        log.info("Restored asset: {}", id);
+        return toDto(restored);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssetDto> getDeletedAssets() {
+        return assetRepository.findByDeletedTrue().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // --- Deactivate (ngừng sử dụng, không phải xoá) ---
     @Transactional
     public AssetDto deactivateAsset(UUID id) {
         Asset asset = assetRepository.findById(id)
@@ -149,7 +183,17 @@ public class AssetService {
         return toDto(updated);
     }
 
-    private AssetDto toDto(Asset asset) {
+    // --- Warranty Expiring ---
+    @Transactional(readOnly = true)
+    public List<AssetDto> getAssetsExpiringWarranty(int daysUntilExpiry) {
+        LocalDate from = LocalDate.now();
+        LocalDate to = from.plusDays(daysUntilExpiry);
+        return assetRepository.findByWarrantyUntilBetweenAndDeletedFalse(from, to).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public AssetDto toDto(Asset asset) {
         UUID buildingId = asset.getUnit() != null && asset.getUnit().getBuilding() != null
                 ? asset.getUnit().getBuilding().getId()
                 : null;
@@ -176,6 +220,8 @@ public class AssetService {
                 asset.getInstalledAt(),
                 asset.getRemovedAt(),
                 asset.getWarrantyUntil(),
+                asset.getDeleted(),
+                asset.getDeletedAt(),
                 asset.getCreatedAt(),
                 asset.getUpdatedAt());
     }
@@ -192,8 +238,8 @@ public class AssetService {
             String description,
             Boolean active,
             LocalDate installedAt,
-            LocalDate warrantyUntil
-    ) {}
+            LocalDate warrantyUntil) {
+    }
 
     public record UpdateAssetRequest(
             String assetCode,
@@ -204,6 +250,6 @@ public class AssetService {
             String description,
             Boolean active,
             LocalDate installedAt,
-            LocalDate warrantyUntil
-    ) {}
+            LocalDate warrantyUntil) {
+    }
 }

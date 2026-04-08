@@ -99,19 +99,18 @@ public class AssetExportService {
 
     private void createHeaderRow(Sheet sheet, int rowNum) {
         Row headerRow = sheet.createRow(rowNum);
-        // Đã bỏ cột "Giá mua", thêm Brand, Serial, Warranty, Description
         String[] headers = {
-                "Mã Căn Hộ",      // 0
-                "Phòng/Khu vực",  // 1
-                "Loại thiết bị",  // 2
-                "Mã Tài Sản",     // 3
-                "Tên Tài Sản",    // 4
-                "Thương Hiệu",    // 5
-                "Model",          // 6
-                "S/N (Serial)",   // 7
-                "Ngày Lắp Đặt",   // 8
-                "Hạn Bảo Hành",   // 9
-                "Trạng Thái",     // 10
+                "Mã Căn Hộ", // 0
+                "Phòng/Khu vực", // 1
+                "Loại thiết bị", // 2
+                "Mã Tài Sản", // 3
+                "Tên Tài Sản", // 4
+                "Thương Hiệu", // 5
+                "Model", // 6
+                "S/N (Serial)", // 7
+                "Ngày Lắp Đặt", // 8
+                "Hạn Bảo Hành", // 9
+                "Trạng Thái", // 10
                 "Mô Tả / Ghi Chú" // 11
         };
 
@@ -148,7 +147,7 @@ public class AssetExportService {
         font.setBold(true);
         font.setFontHeightInPoints((short) 12);
         style.setFont(font);
-        style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex()); // Màu nền phân cách tầng
+        style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         style.setAlignment(HorizontalAlignment.LEFT);
 
@@ -175,15 +174,17 @@ public class AssetExportService {
         createCell(row, col++, getAssetTypeLabel(asset.assetType()), borderStyle);
         createCell(row, col++, asset.assetCode(), borderStyle);
         createCell(row, col++, asset.name(), borderStyle);
-        createCell(row, col++, asset.brand(), borderStyle);         // Full info
-        createCell(row, col++, asset.model(), borderStyle);         // Full info
-        createCell(row, col++, asset.serialNumber(), borderStyle);  // Full info
+        createCell(row, col++, asset.brand(), borderStyle);
+        createCell(row, col++, asset.model(), borderStyle);
+        createCell(row, col++, asset.serialNumber(), borderStyle);
 
         // Ngày lắp đặt
-        createCell(row, col++, asset.installedAt() != null ? asset.installedAt().format(dateFormatter) : "", borderStyle);
+        createCell(row, col++, asset.installedAt() != null ? asset.installedAt().format(dateFormatter) : "",
+                borderStyle);
 
         // Hạn bảo hành
-        createCell(row, col++, asset.warrantyUntil() != null ? asset.warrantyUntil().format(dateFormatter) : "", borderStyle);
+        createCell(row, col++, asset.warrantyUntil() != null ? asset.warrantyUntil().format(dateFormatter) : "",
+                borderStyle);
 
         // Trạng thái
         String status = (asset.active() != null && asset.active()) ? "Đang sử dụng" : "Ngừng sử dụng";
@@ -200,66 +201,46 @@ public class AssetExportService {
     }
 
     private void autoSizeColumns(Sheet sheet) {
-        // Tự động chỉnh độ rộng cho 12 cột
         for (int i = 0; i <= 11; i++) {
             sheet.autoSizeColumn(i);
-            // Giới hạn độ rộng tối thiểu và tối đa cho đẹp
             int currentWidth = sheet.getColumnWidth(i);
-            if (currentWidth < 3000) sheet.setColumnWidth(i, 3000);
-            if (currentWidth > 10000) sheet.setColumnWidth(i, 10000);
+            if (currentWidth < 3000)
+                sheet.setColumnWidth(i, 3000);
+            if (currentWidth > 10000)
+                sheet.setColumnWidth(i, 10000);
         }
     }
 
     private String getRoomTypeLabel(RoomType roomType) {
-        if (roomType == null) return "";
+        if (roomType == null)
+            return "";
         return switch (roomType) {
             case LIVING_ROOM -> "Phòng Khách";
             case BEDROOM -> "Phòng Ngủ";
             case KITCHEN -> "Nhà Bếp";
             case BATHROOM -> "Nhà Tắm/WC";
             case HALLWAY -> "Hành Lang";
-            default -> roomType.name();
+            case OTHER -> "Khác";
         };
     }
 
-    private String getAssetTypeLabel(com.QhomeBase.baseservice.model.AssetType assetType) {
-        if (assetType == null) return "";
+    public static String getAssetTypeLabel(AssetType assetType) {
+        if (assetType == null)
+            return "";
         return switch (assetType) {
-            // Thiết bị nhà Tắm và Vệ sinh
             case TOILET -> "Bồn cầu";
-            case BATHROOM_SINK -> "Chậu rửa nhà tắm";
+            case SINK -> "Chậu rửa";
             case WATER_HEATER -> "Bình nóng lạnh";
-            case SHOWER_SYSTEM -> "Hệ sen vòi nhà tắm";
-            case BATHROOM_FAUCET -> "Vòi chậu rửa";
-            case BATHROOM_LIGHT -> "Đèn nhà tắm";
-            case BATHROOM_DOOR -> "Cửa nhà tắm";
-            case BATHROOM_ELECTRICAL -> "Hệ thống điện nhà vệ sinh";
-
-            // Thiết bị phòng khách
-            case LIVING_ROOM_DOOR -> "Cửa phòng khách";
-            case LIVING_ROOM_LIGHT -> "Đèn phòng khách";
+            case SHOWER_SYSTEM -> "Hệ sen vòi";
+            case FAUCET -> "Vòi nước";
+            case LIGHT -> "Đèn";
+            case DOOR -> "Cửa";
+            case WINDOW -> "Cửa sổ";
+            case ELECTRICAL_SYSTEM -> "Hệ thống điện";
             case AIR_CONDITIONER -> "Điều hòa";
             case INTERNET_SYSTEM -> "Hệ thống mạng Internet";
             case FAN -> "Quạt";
-            case LIVING_ROOM_ELECTRICAL -> "Hệ thống điện phòng khách";
-
-            // Thiết bị phòng ngủ
-            case BEDROOM_ELECTRICAL -> "Hệ thống điện phòng ngủ";
-            case BEDROOM_AIR_CONDITIONER -> "Điều hòa phòng ngủ";
-            case BEDROOM_DOOR -> "Cửa phòng ngủ";
-            case BEDROOM_WINDOW -> "Cửa sổ phòng ngủ";
-
-            // Thiết bị nhà bếp
-            case KITCHEN_LIGHT -> "Hệ thống đèn nhà bếp";
-            case KITCHEN_ELECTRICAL -> "Hệ thống điện nhà bếp";
             case ELECTRIC_STOVE -> "Bếp điện";
-            case KITCHEN_DOOR -> "Cửa bếp và logia";
-
-            // Thiết bị hành lang
-            case HALLWAY_LIGHT -> "Hệ thống đèn hành lang";
-            case HALLWAY_ELECTRICAL -> "Hệ thống điện hành lang";
-
-            // Khác
             case OTHER -> "Khác";
         };
     }

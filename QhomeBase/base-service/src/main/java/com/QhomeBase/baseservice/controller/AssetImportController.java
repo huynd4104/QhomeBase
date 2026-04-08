@@ -1,6 +1,5 @@
 package com.QhomeBase.baseservice.controller;
 
-import com.QhomeBase.baseservice.dto.imports.AssetImportResponse;
 import com.QhomeBase.baseservice.service.exports.AssetExportService;
 import com.QhomeBase.baseservice.service.imports.AssetImportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,8 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Collections;
-import java.util.UUID;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/assets")
@@ -25,41 +23,43 @@ public class AssetImportController {
     private final AssetImportService assetImportService;
     private final AssetExportService assetExportService;
 
+    // --- 1. API IMPORT (giống Resident: trả error Excel) ---
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("@authz.canCreateAssets() || @authz.canManageAssets()")
-    @Operation(summary = "Import tài sản từ file Excel vào một Tòa nhà")
-    public ResponseEntity<?> importAssets(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("buildingId") UUID buildingId) {
+    @Operation(summary = "Import tài sản từ file Excel")
+    public ResponseEntity<byte[]> importAssets(
+            @RequestParam("file") MultipartFile file) throws IOException {
 
-        log.info("Request import assets for building: {}", buildingId);
+        log.info("Request import assets from file: {}", file.getOriginalFilename());
 
-        try {
-            AssetImportResponse response = assetImportService.importAssets(file, buildingId);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            log.warn("[ImportAsset] Validation error: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(buildErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            log.error("[ImportAsset] Unexpected error", e);
-            return ResponseEntity.internalServerError().body(buildErrorResponse("Lỗi hệ thống: " + e.getMessage()));
+        byte[] errorReport = assetImportService.importAssets(file.getInputStream());
+
+        if (errorReport.length > 0) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "import_errors.xlsx");
+            return ResponseEntity.badRequest()
+                    .headers(headers)
+                    .body(errorReport);
         }
+
+        return ResponseEntity.ok().build();
     }
 
-    // --- 2. API TẢI TEMPLATE (Mới thêm theo yêu cầu của bạn) ---
+    // --- 2. API TẢI TEMPLATE ---
     @GetMapping(value = "/import/template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     @PreAuthorize("@authz.canViewAssets()")
     @Operation(summary = "Tải file mẫu Excel để nhập liệu tài sản")
     public ResponseEntity<byte[]> downloadTemplate() {
         try {
-            // Gọi Service để tạo file mẫu chuẩn
             byte[] bytes = assetImportService.generateTemplateWorkbook();
 
-            String filename = "asset_import_template.xlsx";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "asset_import_template.xlsx");
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .headers(headers)
                     .body(bytes);
         } catch (Exception e) {
             log.error("Failed to generate asset template", e);
@@ -84,21 +84,13 @@ public class AssetImportController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .contentType(MediaType
+                            .parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(bytes);
 
         } catch (Exception e) {
             log.error("Failed to export assets", e);
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    private AssetImportResponse buildErrorResponse(String message) {
-        return AssetImportResponse.builder()
-                .successCount(0)
-                .errorCount(0)
-                .hasValidationErrors(true)
-                .validationErrors(Collections.singletonList(message))
-                .build();
     }
 }

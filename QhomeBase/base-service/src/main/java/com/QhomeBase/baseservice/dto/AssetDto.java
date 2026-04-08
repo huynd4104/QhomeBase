@@ -25,6 +25,8 @@ public record AssetDto(
         LocalDate installedAt,
         LocalDate removedAt,
         LocalDate warrantyUntil,
+        Boolean deleted,
+        OffsetDateTime deletedAt,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 }
